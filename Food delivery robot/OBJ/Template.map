@@ -8114,83 +8114,83 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   Object Name
 
-       338          0          0          0          0       3711   24cxx.o
-        40          0          0          0          0       3196   atk_qrdecode.o
-        60         16          0          0          0      11482   bsp.o
-        52          0          0          0          0        364   cpu_a.o
-       304         36          0         28         16       7089   cpu_core.o
-       812         60          0          0          0       4775   ctiic.o
-       836        142          0          8        176      37258   dcmi.o
-       292         34          0          8          0       3655   delay.o
-        60          4          0          0         41       2307   fontupd.o
-       846         48         10          1          0       4207   ft5206.o
-      1074         82        194          1          0       4502   gt9147.o
-      1158         80        206          1          0       4618   gt9271.o
-       360         32          0          1          0       1882   key.o
-     23508        310      18240          8         90      89469   lcd.o
-        76          8          0          0          0        935   led.o
-        70          0          0          0          0      13492   lib_mem.o
-      1532        132          0          8    2048200       9584   ltdc.o
-      3260        578          0         24      15872     530797   main.o
-       536         56         36         36   31695616       7275   malloc.o
-       120         56          0          0          0      32219   mpu.o
-       120          4          0          0          0        849   mycc936.o
-       764         32          0          0          0       4382   myiic.o
-         2          0         81          0       3936      19285   os_cfg_app.o
-      2482        360          0          0          0      16436   os_core.o
-       280         14          0          0          0        456   os_cpu_a.o
-       716        160          0          4          0      25636   os_cpu_c.o
-         2          0          0          0          0        978   os_dbg.o
-        24         10          0          0          0       1202   os_flag.o
-        24         10          0          0          0       1012   os_mem.o
-       166         16          0          0          0       2272   os_msg.o
-      1066         62          0          0          0       6605   os_mutex.o
-       136         20          0          8          0       2990   os_prio.o
-        24         10          0          0          0       1335   os_q.o
-        24         10          0          0          0       1150   os_sem.o
-      1248        204          0          0          0       3959   os_stat.o
-      2266        162          0          0          0      11860   os_task.o
-      1008         86          0          0          0       5107   os_tick.o
-       420         38          0          0          0       2641   os_time.o
-       516        134          0          0          0       2510   os_tmr.o
-         0          0          0        163       1596      17818   os_var.o
-       838         72         10          1          0       3783   ott2001a.o
-      1554         52       5347          0          0      10575   ov5640.o
-       208         10          0          0          0       2069   pcf8574.o
-       356         44          0          0         68       3889   qspi.o
-        68         14          0          1        176       1427   rs485.o
-       528         28          0          0          0       4450   sccb.o
-       448         40          0          0         52       3072   sdram.o
-       104         34        504          0       1536        876   startup_stm32f767xx.o
-       106         22          0          4          0       3941   stm32f7xx_hal.o
-       310         22          0          0          0      36400   stm32f7xx_hal_cortex.o
-       402         12          0          0          0       4686   stm32f7xx_hal_dcmi.o
-       638         20          8          0          0       4519   stm32f7xx_hal_dma.o
-       124          0          0          0          0       1545   stm32f7xx_hal_dma_ex.o
-       588         16          0          0          0       3680   stm32f7xx_hal_gpio.o
-       980          6          0          0          0       4481   stm32f7xx_hal_ltdc.o
-       124         10          0          0          0       1344   stm32f7xx_hal_pwr_ex.o
-      1394          4          0          0          0       6414   stm32f7xx_hal_qspi.o
-       648         70          0          0          0       4382   stm32f7xx_hal_rcc.o
-      2844         62          0          0          0       3836   stm32f7xx_hal_rcc_ex.o
-       148          0          0          0          0       2708   stm32f7xx_hal_sdram.o
-        86          0          0          0          0       1208   stm32f7xx_hal_sram.o
-      1302         20          0          0          0      10289   stm32f7xx_hal_tim.o
-         4          0          0          0          0       1974   stm32f7xx_hal_tim_ex.o
-      2390         40          0          0          0      12091   stm32f7xx_hal_uart.o
-        12          0          0          0          0       2879   stm32f7xx_it.o
-       630         12          0          0          0       5816   stm32f7xx_ll_fmc.o
-       284         26          0          0          0      33493   sys.o
-        88         24         24          4          0       1195   system_stm32f7xx.o
-       580         14          0          0          0       2917   text.o
-       384         44          0          8        120       4477   timer.o
-      3572        254        125         76          0      10981   touch.o
-        64         10          0          0          0       1010   ultrasonic.o
-       406         66          0          8        312       5742   usart.o
-       514         16          0          4          0       4787   w25qxx.o
+       338          0          0          0          0       3563   24cxx.o
+        40          0          0          0          0       3052   atk_qrdecode.o
+        60         16          0          0          0      11354   bsp.o
+        52          0          0          0          0        344   cpu_a.o
+       304         36          0         28         16       6861   cpu_core.o
+       812         60          0          0          0       4599   ctiic.o
+       836        142          0          8        176      37010   dcmi.o
+       292         34          0          8          0       3507   delay.o
+        60          4          0          0         41       2211   fontupd.o
+       846         48         10          1          0       4059   ft5206.o
+      1074         82        194          1          0       4354   gt9147.o
+      1158         80        206          1          0       4470   gt9271.o
+       360         32          0          1          0       1806   key.o
+     23508        310      18240          8         90      88857   lcd.o
+        76          8          0          0          0        883   led.o
+        70          0          0          0          0      13420   lib_mem.o
+      1532        132          0          8    2048200       9292   ltdc.o
+      3260        578          0         24      15872     529797   main.o
+       536         56         36         36   31695616       7003   malloc.o
+       120         56          0          0          0      32171   mpu.o
+       120          4          0          0          0        821   mycc936.o
+       764         32          0          0          0       4206   myiic.o
+         2          0         81          0       3936      19177   os_cfg_app.o
+      2482        360          0          0          0      15908   os_core.o
+       280         14          0          0          0        436   os_cpu_a.o
+       716        160          0          4          0      25276   os_cpu_c.o
+         2          0          0          0          0        930   os_dbg.o
+        24         10          0          0          0       1150   os_flag.o
+        24         10          0          0          0        964   os_mem.o
+       166         16          0          0          0       2172   os_msg.o
+      1066         62          0          0          0       6405   os_mutex.o
+       136         20          0          8          0       2842   os_prio.o
+        24         10          0          0          0       1287   os_q.o
+        24         10          0          0          0       1102   os_sem.o
+      1248        204          0          0          0       3835   os_stat.o
+      2266        162          0          0          0      11492   os_task.o
+      1008         86          0          0          0       4963   os_tick.o
+       420         38          0          0          0       2537   os_time.o
+       516        134          0          0          0       2438   os_tmr.o
+         0          0          0        163       1596      17770   os_var.o
+       838         72         10          1          0       3659   ott2001a.o
+      1554         52       5347          0          0      10175   ov5640.o
+       208         10          0          0          0       1993   pcf8574.o
+       356         44          0          0         68       3717   qspi.o
+        68         14          0          1        176       1351   rs485.o
+       528         28          0          0          0       4278   sccb.o
+       448         40          0          0         52       2952   sdram.o
+       104         34        504          0       1536        856   startup_stm32f767xx.o
+       106         22          0          4          0       3761   stm32f7xx_hal.o
+       310         22          0          0          0      36192   stm32f7xx_hal_cortex.o
+       402         12          0          0          0       4502   stm32f7xx_hal_dcmi.o
+       638         20          8          0          0       4395   stm32f7xx_hal_dma.o
+       124          0          0          0          0       1497   stm32f7xx_hal_dma_ex.o
+       588         16          0          0          0       3552   stm32f7xx_hal_gpio.o
+       980          6          0          0          0       4333   stm32f7xx_hal_ltdc.o
+       124         10          0          0          0       1292   stm32f7xx_hal_pwr_ex.o
+      1394          4          0          0          0       6242   stm32f7xx_hal_qspi.o
+       648         70          0          0          0       4234   stm32f7xx_hal_rcc.o
+      2844         62          0          0          0       3760   stm32f7xx_hal_rcc_ex.o
+       148          0          0          0          0       2612   stm32f7xx_hal_sdram.o
+        86          0          0          0          0       1152   stm32f7xx_hal_sram.o
+      1302         20          0          0          0       9993   stm32f7xx_hal_tim.o
+         4          0          0          0          0       1898   stm32f7xx_hal_tim_ex.o
+      2390         40          0          0          0      11715   stm32f7xx_hal_uart.o
+        12          0          0          0          0       2727   stm32f7xx_it.o
+       630         12          0          0          0       5612   stm32f7xx_ll_fmc.o
+       284         26          0          0          0      33385   sys.o
+        88         24         24          4          0       1123   system_stm32f7xx.o
+       580         14          0          0          0       2837   text.o
+       384         44          0          8        120       4277   timer.o
+      3572        254        125         76          0      10657   touch.o
+        64         10          0          0          0        962   ultrasonic.o
+       406         66          0          8        312       5546   usart.o
+       514         16          0          4          0       4615   w25qxx.o
 
     ----------------------------------------------------------------------
-     69432       4078      24834        432   33767812    1108236   Object Totals
+     69432       4078      24834        432   33767812    1096176   Object Totals
          0          0         32          0          0          0   (incl. Generated)
         84          8         17         27          5          0   (incl. Padding)
 
@@ -8294,8 +8294,8 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
 
-    109570       4412      26222        456   33768080    1342234   Grand Totals
-    109570       4412      26222         72   33768080    1342234   ELF Image Totals (compressed)
+    109570       4412      26222        456   33768080    1330174   Grand Totals
+    109570       4412      26222         72   33768080    1330174   ELF Image Totals (compressed)
     109570       4412      26222         72          0          0   ROM Totals
 
 ==============================================================================
