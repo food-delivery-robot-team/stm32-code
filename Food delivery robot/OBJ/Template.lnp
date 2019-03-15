@@ -59,6 +59,8 @@
 "..\obj\ultrasonic.o"
 "..\obj\timer.o"
 "..\obj\rs485.o"
+"..\obj\crc.o"
+"..\obj\motor_drive.o"
 "..\obj\bsp.o"
 "..\obj\cpu_c.o"
 "..\obj\cpu_core.o"
@@ -99,6 +101,9 @@
 "..\obj\malloc.o"
 "..\obj\fontupd.o"
 "..\obj\text.o"
+"..\obj\usmart.o"
+"..\obj\usmart_config.o"
+"..\obj\usmart_str.o"
 --strict --scatter "..\OBJ\Template.sct"
 --summary_stderr --info summarysizes --map --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

@@ -24,8 +24,10 @@
 #include "touch.h"
 #include "ultrasonic.h"
 #include "timer.h"
-//#include "usmart.h"
-//#include "rs485.h"
+#include "crc.h"
+#include "motor_drive.h"
+#include "usmart.h"
+#include "rs485.h"
 
 /************************************************
  ALIENTEK 阿波罗STM32F7开发板 UCOSIII实验
@@ -75,6 +77,17 @@ OS_TCB ov5640TaskTCB;
 //任务堆栈	
 CPU_STK ov5640_TASK_STK[ov5640_STK_SIZE];
 void ov5640_task(void *p_arg);
+
+//任务优先级
+#define motor_drive_TASK_PRIO		5
+//任务堆栈大小	
+#define motor_drive_STK_SIZE 		256
+//任务控制块
+OS_TCB motor_driveTaskTCB;
+//任务堆栈	
+CPU_STK motor_drive_TASK_STK[motor_drive_STK_SIZE];
+void motor_drive_task(void *p_arg);
+
 
 //任务优先级
 #define ultrasonic_TASK_PRIO		5
@@ -167,13 +180,14 @@ int main(void)
     Stm32_Clock_Init(432,25,2,9);   //设置时钟,216Mhz 
     delay_init(216);                //延时初始化
 	uart_init(115200);		        //串口初始化
-//	usmart_dev.init(108); 		    //初始化USMART	
+	usmart_dev.init(108); 		    //初始化USMART	
     LED_Init();                     //初始化LED
 	KEY_Init();                     //初始化按键
 	SDRAM_Init();                   //初始化SDRAM
 	LCD_Init();                     //初始化LCD
-//	RS485_Init(115200);		        //初始化RS485
+	RS485_Init(115200);		        //初始化RS485
 	ultrasonic_init();              //初始化超声波传感器
+	motor_drive_Init();
 	W25QXX_Init();				   				//初始化W25Q256
 	PCF8574_Init();									//初始化PCF8574
 	OV5640_Init();									//初始化OV5640
@@ -183,6 +197,10 @@ int main(void)
 	my_mem_init(SRAMDTCM);          //初始化内部DTCM内存池
 //	TIM3_Init(9,108-1);             //108M/108=1M的计数频率，自动重装载为100，那么PWM频率为1M/10=100khz
 	TIM5_CH1_Cap_Init(0XFFFFFFFF,108-1); //以1MHZ的频率计数
+	TIM3_PWM_Init(500-1,108-1);     //108M/108=1M的计数频率，自动重装载为500，那么PWM频率为1M/500=2kHZ
+	
+	TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比
+	TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比
 	
 	POINT_COLOR=RED; 
 	LCD_Clear(BLACK); 	
@@ -402,7 +420,22 @@ void start_task(void *p_arg)
                  (OS_TICK	  )0,					
                  (void   	* )0,				
                  (OS_OPT      )OS_OPT_TASK_STK_CHK|OS_OPT_TASK_STK_CLR|OS_OPT_TASK_SAVE_FP, 
-                 (OS_ERR 	* )&err);	
+                 (OS_ERR 	* )&err);
+
+//创建motor_drive_guide任务
+	OSTaskCreate((OS_TCB 	* )&motor_driveTaskTCB,		
+				 (CPU_CHAR	* )"motor_drive task", 		
+                 (OS_TASK_PTR )motor_drive_task, 			
+                 (void		* )0,					
+                 (OS_PRIO	  )motor_drive_TASK_PRIO,     	
+                 (CPU_STK   * )&motor_drive_TASK_STK[0],	
+                 (CPU_STK_SIZE)motor_drive_STK_SIZE/10,	
+                 (CPU_STK_SIZE)motor_drive_STK_SIZE,		
+                 (OS_MSG_QTY  )0,					
+                 (OS_TICK	  )0,					
+                 (void   	* )0,				
+                 (OS_OPT      )OS_OPT_TASK_STK_CHK|OS_OPT_TASK_STK_CLR|OS_OPT_TASK_SAVE_FP, 
+                 (OS_ERR 	* )&err);				 
 				 
 	OS_CRITICAL_EXIT();	//进入临界区				 
 	OS_TaskSuspend((OS_TCB*)&StartTaskTCB,&err);		//挂起开始任务			 
@@ -597,9 +630,6 @@ void RFID_task(void *p_arg)
 }
 
 
-
-
-
 //lidar任务函数
 void lidar_task(void *p_arg)
 {
@@ -642,21 +672,24 @@ void ultrasonic_task(void *p_arg)
 //			printf("HIGH:%lld cm\r\n",temp/58);//打印总的高点平时间
 			TIM5CH1_CAPTURE_STA=0;          //开启下一次捕获
 		}
-		HAL_GPIO_WritePin(GPIOB,GPIO_PIN_1,GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOB,GPIO_PIN_15,GPIO_PIN_SET);
 		delay_us(15);
-		HAL_GPIO_WritePin(GPIOB,GPIO_PIN_1,GPIO_PIN_RESET);
-		
+		HAL_GPIO_WritePin(GPIOB,GPIO_PIN_15,GPIO_PIN_RESET);
+
 		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //延时100ms
 	}
 }
 
 u8 USART_RX_FLAG;
 u16 USART_RX_STORAGE;
+u8 AGV_INF[8];
 
 void AGV_guide_task(void *p_arg)
 {
-	u8 len;
+	u8 len,i;
+
 	u16 usart_rx_ss;
+	unsigned short crc_check;
 
 	OS_ERR err;
 	p_arg = p_arg;
@@ -666,19 +699,41 @@ void AGV_guide_task(void *p_arg)
 		if(USART_RX_STA&0x8000)
 		{					   
 			len=USART_RX_STA&0x3fff;//得到此次接收到的数据长度
-			HAL_UART_Transmit(&UART1_Handler,(uint8_t*)USART_RX_BUF,len,1000);	//发送接收到的数据
-			while(__HAL_UART_GET_FLAG(&UART1_Handler,UART_FLAG_TC)!=SET);		//等待发送结束
-
-//			printf("\r\n\r\n");//插入换行
+//			HAL_UART_Transmit(&UART1_Handler,(uint8_t*)USART_RX_BUF,len,1000);	//发送接收到的数据
+//			while(__HAL_UART_GET_FLAG(&UART1_Handler,UART_FLAG_TC)!=SET);		//等待发送结束
+			crc_check=CRC16((uint8_t*)USART_RX_BUF,len-2);
+			if((USART_RX_BUF[len-1]==(crc_check>>8))&&(USART_RX_BUF[len-2]==(crc_check&0X00FF)))
+			{
+				for(i=0;i<len;i++)
+				{
+					AGV_INF[i]=USART_RX_BUF[i];
+				}
+			}
+//			printf("%x",crc_check&0x00FF);
+//			printf("%x",USART_RX_BUF[len-1]);
+//			printf("%x",USART_RX_BUF[len]);
+			
 			USART_RX_STA=0;
 		}
-		OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //延时100ms
+		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err); //延时100ms
 			
 		if(USART_RX_FLAG==1)
 		{
 			USART_RX_STORAGE++;
 			usart_rx_ss=USART_RX_STORAGE-USART_RX_STA;
+//			if(USART_RX_BUF[0]==0x20&&USART_RX_BUF[1]==0x19)
+//			{
+//				USART_RX_STA|=0x4000;
+//				USART_RX_STORAGE=0;
+//				USART_RX_FLAG=0;
+//			}
 			if(usart_rx_ss>2)
+			{
+				USART_RX_STA|=0x8000;
+				USART_RX_STORAGE=0;
+				USART_RX_FLAG=0;
+			}
+			if(USART_RX_STA==8)
 			{
 				USART_RX_STA|=0x8000;
 				USART_RX_STORAGE=0;
@@ -688,6 +743,114 @@ void AGV_guide_task(void *p_arg)
 		
 	}
 }
+
+
+//motor_drive任务函数
+void motor_drive_task(void *p_arg)
+{
+	u8 len,flag_485;
+	u8 send_again,t;
+	u16 AGV_feedback;
+
+//	u8 receive_s_reply[8]={0x20,0x19,0x0a,0x00,0x00,0x00,0x19,0x61};
+//	u8 receive_e_reply[8]={0x20,0x19,0x0b,0x00,0x00,0x00,0x18,0x9d};
+//	u8 transmit_buf[10]={0x20,0x19,0x00,0x00,0x00,0x00,0x1a,0xb9,0x0d,0x0a};
+//	u8 RX_485BUF[10]={0x20,0x19,0x00,0x00,0x00,0x00,0x1a,0xb9,0x0d,0x0a};
+//	unsigned short crc_check;
+	
+	OS_ERR err;
+	p_arg = p_arg;
+	
+	
+	
+	
+	while(1)
+	{
+		Left_FR(0);
+		Right_FR(1);
+		Left_BK(1);
+		Right_BK(1);
+//		RS485_Receive_Data(RX_485BUF,&flag_485);
+		
+//		if(flag_485)//接收到F1回复
+//		{	
+////			len=USART_RX_STA&0x3fff;//得到此次接收到的数据长度
+//			crc_check=CRC16((uint8_t*)RX_485BUF,6);
+//			if((RX_485BUF[7]==(crc_check>>8))&&(RX_485BUF[6]==(crc_check&0X00FF)))
+//			{
+//				if(RX_485BUF[2]==0x0a) send_again=0;
+//				if(RX_485BUF[2]==0x0b) send_again=1;
+//			}
+//			if(send_again==1)
+//			{
+////				HAL_UART_Transmit(&UART1_Handler,(uint8_t*)transmit_buf,8,1000);	//发送接收到的数据
+////				while(__HAL_UART_GET_FLAG(&UART1_Handler,UART_FLAG_TC)!=SET);		//等待发送结束
+//				RS485_Send_Data(transmit_buf,10);//发送5个字节 
+//				send_again=0;
+//			}
+
+//		}
+//		
+//		if(!flag_485)
+//		{
+			AGV_feedback=AGV_INF[4];
+			AGV_feedback=(AGV_feedback<<8)+AGV_INF[5];
+//			printf("%x",AGV_feedback);
+			if(((0x0128<AGV_feedback&&AGV_feedback<0x03c8)||(AGV_feedback==0x0108)||(AGV_feedback==0x0060))&&AGV_feedback!=0)
+			{
+				
+				TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
+				TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
+				
+//				transmit_buf[2]=0x00;transmit_buf[5]=0x00;
+//				
+//				crc_check=CRC16((uint8_t*)transmit_buf,6);
+//				transmit_buf[6]=crc_check&0X00FF;
+//				transmit_buf[7]=crc_check>>8;
+//				
+////				HAL_UART_Transmit(&UART1_Handler,(uint8_t*)transmit_buf,8,1000);	//发送接收到的数据
+////				while(__HAL_UART_GET_FLAG(&UART1_Handler,UART_FLAG_TC)!=SET);		//等待发送结束
+//				RS485_Send_Data(transmit_buf,10);//发送5个字节 
+			}
+				
+			if((AGV_feedback<0x0128)&&(AGV_feedback!=0x0108)&&(AGV_feedback!=0x0060)&&AGV_feedback!=0)
+			{
+				
+				TIM_SetTIM3Compare4(299);	//修改比较值，修改占空比
+				TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比
+//				transmit_buf[2]=0x01;transmit_buf[5]=0x01;
+//				
+//				crc_check=CRC16((uint8_t*)transmit_buf,6);
+//				transmit_buf[6]=crc_check&0X00FF;
+//				transmit_buf[7]=crc_check>>8;
+//				
+////				HAL_UART_Transmit(&UART1_Handler,(uint8_t*)transmit_buf,8,1000);	//发送接收到的数据
+////				while(__HAL_UART_GET_FLAG(&UART1_Handler,UART_FLAG_TC)!=SET);		//等待发送结束
+//				RS485_Send_Data(transmit_buf,10);//发送5个字节 
+				
+			}
+			if(AGV_feedback>0x03c8)
+			{
+				TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比
+				TIM_SetTIM3Compare3(299);	//修改比较值，修改占空比
+//				transmit_buf[2]=0x01;transmit_buf[5]=0x02;
+//				
+//				crc_check=CRC16((uint8_t*)transmit_buf,6);
+//				transmit_buf[6]=crc_check&0X00FF;
+//				transmit_buf[7]=crc_check>>8;
+//				
+////				HAL_UART_Transmit(&UART1_Handler,(uint8_t*)transmit_buf,8,1000);	//发送接收到的数据
+////				while(__HAL_UART_GET_FLAG(&UART1_Handler,UART_FLAG_TC)!=SET);		//等待发送结束
+//				RS485_Send_Data(transmit_buf,10);//发送5个字节 
+			}
+//		}
+		
+		
+		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err); //延时10ms
+		
+	}
+}
+
 
 
 //摄像头数据DMA接收完成中断回调函数

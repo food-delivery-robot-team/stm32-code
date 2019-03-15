@@ -365,7 +365,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F767xx,USE_HAL_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\CORE;..\OBJ;..\USER;..\HALLIB\STM32F7xx_HAL_Driver\Inc;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\HARDWARE\LED;..\UCOSIII\uC-LIB;..\UCOSIII\uC-CPU;..\UCOSIII\UCOS-BSP;..\UCOSIII\UCOS-CONFIG;..\UCOSIII\uCOS-III\Source;..\UCOSIII\uC-CPU\ARM-Cortex-M4\RealView;..\UCOSIII\uC-LIB\Ports\ARM-Cortex-M4\RealView;..\UCOSIII\uCOS-III\Ports\ARM-Cortex-M4\Generic\RealView;..\MALLOC;..\FATFS\exfuns;..\FATFS\src;..\ATKQR;..\USER;..\HARDWARE\DCMI;..\HARDWARE\IIC;..\HARDWARE\KEY;..\HARDWARE\LCD;..\HARDWARE\MPU;..\HARDWARE\NAND;..\HARDWARE\OV5640;..\HARDWARE\PCF8574;..\HARDWARE\QSPI;..\HARDWARE\SDMMC;..\HARDWARE\SDRAM;..\HARDWARE\W25QXX;..\FATFS;..\FATFS\src\option;..\TEXT;..\HARDWARE\LIDAR;..\HARDWARE\RFID;..\HARDWARE\24CXX;..\HARDWARE\TOUCH;..\HARDWARE\ULTRASONIC;..\HARDWARE\TIMER;..\USMART;..\HARDWARE\RS485</IncludePath>
+              <IncludePath>..\CORE;..\OBJ;..\USER;..\HALLIB\STM32F7xx_HAL_Driver\Inc;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\HARDWARE\LED;..\UCOSIII\uC-LIB;..\UCOSIII\uC-CPU;..\UCOSIII\UCOS-BSP;..\UCOSIII\UCOS-CONFIG;..\UCOSIII\uCOS-III\Source;..\UCOSIII\uC-CPU\ARM-Cortex-M4\RealView;..\UCOSIII\uC-LIB\Ports\ARM-Cortex-M4\RealView;..\UCOSIII\uCOS-III\Ports\ARM-Cortex-M4\Generic\RealView;..\MALLOC;..\FATFS\exfuns;..\FATFS\src;..\ATKQR;..\USER;..\HARDWARE\DCMI;..\HARDWARE\IIC;..\HARDWARE\KEY;..\HARDWARE\LCD;..\HARDWARE\MPU;..\HARDWARE\NAND;..\HARDWARE\OV5640;..\HARDWARE\PCF8574;..\HARDWARE\QSPI;..\HARDWARE\SDMMC;..\HARDWARE\SDRAM;..\HARDWARE\W25QXX;..\FATFS;..\FATFS\src\option;..\TEXT;..\HARDWARE\LIDAR;..\HARDWARE\RFID;..\HARDWARE\24CXX;..\HARDWARE\TOUCH;..\HARDWARE\ULTRASONIC;..\HARDWARE\TIMER;..\USMART;..\HARDWARE\RS485;..\HARDWARE\CRC16_MODBUS;..\HARDWARE\MOTOR_DRIVE;..\USMART</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -748,6 +748,16 @@
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\RS485\rs485.c</FilePath>
             </File>
+            <File>
+              <FileName>crc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\CRC16_MODBUS\crc.c</FilePath>
+            </File>
+            <File>
+              <FileName>motor_drive.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\MOTOR_DRIVE\motor_drive.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1047,6 +1057,26 @@
               <FileName>text.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\TEXT\text.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>USMART</GroupName>
+          <Files>
+            <File>
+              <FileName>usmart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\USMART\usmart.c</FilePath>
+            </File>
+            <File>
+              <FileName>usmart_config.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\USMART\usmart_config.c</FilePath>
+            </File>
+            <File>
+              <FileName>usmart_str.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\USMART\usmart_str.c</FilePath>
             </File>
           </Files>
         </Group>
