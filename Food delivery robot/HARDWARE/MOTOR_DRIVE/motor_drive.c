@@ -23,6 +23,10 @@ void motor_drive_Init(void)
 //	
 //	HAL_GPIO_WritePin(GPIOE,GPIO_PIN_2,GPIO_PIN_SET);	//PB0÷√0
 //	HAL_GPIO_WritePin(GPIOE,GPIO_PIN_4,GPIO_PIN_SET);	//PB1÷√1 
+	Left_FR(0);
+	Right_FR(1);
+	Left_BK(1);
+	Right_BK(1);
 
 }
 

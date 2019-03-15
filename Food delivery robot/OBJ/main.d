@@ -136,3 +136,6 @@
 ..\obj\main.o: ..\USMART\usmart.h
 ..\obj\main.o: ..\USMART\usmart_str.h
 ..\obj\main.o: ..\HARDWARE\RS485\rs485.h
+..\obj\main.o: ..\HARDWARE\WM8978\wm8978.h
+..\obj\main.o: ..\APP\audioplay.h
+..\obj\main.o: ..\AUDIOCODEC\wav\wavplay.h

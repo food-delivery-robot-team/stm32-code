@@ -365,7 +365,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F767xx,USE_HAL_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\CORE;..\OBJ;..\USER;..\HALLIB\STM32F7xx_HAL_Driver\Inc;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\HARDWARE\LED;..\UCOSIII\uC-LIB;..\UCOSIII\uC-CPU;..\UCOSIII\UCOS-BSP;..\UCOSIII\UCOS-CONFIG;..\UCOSIII\uCOS-III\Source;..\UCOSIII\uC-CPU\ARM-Cortex-M4\RealView;..\UCOSIII\uC-LIB\Ports\ARM-Cortex-M4\RealView;..\UCOSIII\uCOS-III\Ports\ARM-Cortex-M4\Generic\RealView;..\MALLOC;..\FATFS\exfuns;..\FATFS\src;..\ATKQR;..\USER;..\HARDWARE\DCMI;..\HARDWARE\IIC;..\HARDWARE\KEY;..\HARDWARE\LCD;..\HARDWARE\MPU;..\HARDWARE\NAND;..\HARDWARE\OV5640;..\HARDWARE\PCF8574;..\HARDWARE\QSPI;..\HARDWARE\SDMMC;..\HARDWARE\SDRAM;..\HARDWARE\W25QXX;..\FATFS;..\FATFS\src\option;..\TEXT;..\HARDWARE\LIDAR;..\HARDWARE\RFID;..\HARDWARE\24CXX;..\HARDWARE\TOUCH;..\HARDWARE\ULTRASONIC;..\HARDWARE\TIMER;..\USMART;..\HARDWARE\RS485;..\HARDWARE\CRC16_MODBUS;..\HARDWARE\MOTOR_DRIVE;..\USMART</IncludePath>
+              <IncludePath>..\CORE;..\OBJ;..\USER;..\HALLIB\STM32F7xx_HAL_Driver\Inc;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\HARDWARE\LED;..\UCOSIII\uC-LIB;..\UCOSIII\uC-CPU;..\UCOSIII\UCOS-BSP;..\UCOSIII\UCOS-CONFIG;..\UCOSIII\uCOS-III\Source;..\UCOSIII\uC-CPU\ARM-Cortex-M4\RealView;..\UCOSIII\uC-LIB\Ports\ARM-Cortex-M4\RealView;..\UCOSIII\uCOS-III\Ports\ARM-Cortex-M4\Generic\RealView;..\MALLOC;..\FATFS\exfuns;..\FATFS\src;..\ATKQR;..\USER;..\HARDWARE\DCMI;..\HARDWARE\IIC;..\HARDWARE\KEY;..\HARDWARE\LCD;..\HARDWARE\MPU;..\HARDWARE\NAND;..\HARDWARE\OV5640;..\HARDWARE\PCF8574;..\HARDWARE\QSPI;..\HARDWARE\SDMMC;..\HARDWARE\SDRAM;..\HARDWARE\W25QXX;..\FATFS;..\FATFS\src\option;..\TEXT;..\HARDWARE\LIDAR;..\HARDWARE\RFID;..\HARDWARE\24CXX;..\HARDWARE\TOUCH;..\HARDWARE\ULTRASONIC;..\HARDWARE\TIMER;..\USMART;..\HARDWARE\RS485;..\HARDWARE\CRC16_MODBUS;..\HARDWARE\MOTOR_DRIVE;..\USMART;..\APP;..\ATKQR;..\PICTURE;..\AUDIOCODEC;..\AUDIOCODEC\wav;..\HARDWARE\WM8978;..\HARDWARE\SAI;..\FATFS;..\FATFS\doc;..\FATFS\doc\en;..\FATFS\doc\img;..\FATFS\doc\ja;..\FATFS\exfuns;..\FATFS\src;..\FATFS\src\option;..\FATFS\doc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -578,6 +578,16 @@
               <FileType>1</FileType>
               <FilePath>..\HALLIB\STM32F7xx_HAL_Driver\Src\stm32f7xx_hal_ltdc_ex.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f7xx_hal_sai.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HALLIB\STM32F7xx_HAL_Driver\Src\stm32f7xx_hal_sai.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f7xx_hal_sai_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HALLIB\STM32F7xx_HAL_Driver\Src\stm32f7xx_hal_sai_ex.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -757,6 +767,16 @@
               <FileName>motor_drive.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\MOTOR_DRIVE\motor_drive.c</FilePath>
+            </File>
+            <File>
+              <FileName>sai.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\SAI\sai.c</FilePath>
+            </File>
+            <File>
+              <FileName>wm8978.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\WM8978\wm8978.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1077,6 +1097,51 @@
               <FileName>usmart_str.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\USMART\usmart_str.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>APP</GroupName>
+          <Files>
+            <File>
+              <FileName>audioplay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\audioplay.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>AUDIOCODEC</GroupName>
+          <Files>
+            <File>
+              <FileName>wavplay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\AUDIOCODEC\wav\wavplay.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>PICTURE</GroupName>
+          <Files>
+            <File>
+              <FileName>bmp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\PICTURE\bmp.c</FilePath>
+            </File>
+            <File>
+              <FileName>gif.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\PICTURE\gif.c</FilePath>
+            </File>
+            <File>
+              <FileName>piclib.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\PICTURE\piclib.c</FilePath>
+            </File>
+            <File>
+              <FileName>tjpgd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\PICTURE\tjpgd.c</FilePath>
             </File>
           </Files>
         </Group>

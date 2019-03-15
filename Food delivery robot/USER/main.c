@@ -28,6 +28,10 @@
 #include "motor_drive.h"
 #include "usmart.h"
 #include "rs485.h"
+#include "wm8978.h"	 
+#include "audioplay.h"
+
+
 
 /************************************************
  ALIENTEK °¢²¨ÂÞSTM32F7¿ª·¢°å UCOSIIIÊµÑé
@@ -188,13 +192,22 @@ int main(void)
 	RS485_Init(115200);		        //³õÊ¼»¯RS485
 	ultrasonic_init();              //³õÊ¼»¯³¬Éù²¨´«¸ÐÆ÷
 	motor_drive_Init();
-	W25QXX_Init();				   				//³õÊ¼»¯W25Q256
+	W25QXX_Init();				   	//³õÊ¼»¯W25Q256
+	W25QXX_Init();				    //³õÊ¼»¯W25Q256
+    WM8978_Init();				    //³õÊ¼»¯WM8978
+	WM8978_HPvol_Set(40,40);	    //¶ú»úÒôÁ¿ÉèÖÃ
+	WM8978_SPKvol_Set(50);		    //À®°ÈÒôÁ¿ÉèÖÃ
 	PCF8574_Init();									//³õÊ¼»¯PCF8574
 	OV5640_Init();									//³õÊ¼»¯OV5640
 	tp_dev.init();				    //³õÊ¼»¯´¥ÃþÆÁ
 	my_mem_init(SRAMIN);            //³õÊ¼»¯ÄÚ²¿ÄÚ´æ³Ø
 	my_mem_init(SRAMEX);            //³õÊ¼»¯Íâ²¿SDRAMÄÚ´æ³Ø
 	my_mem_init(SRAMDTCM);          //³õÊ¼»¯ÄÚ²¿DTCMÄÚ´æ³Ø
+	
+	exfuns_init();		            //ÎªfatfsÏà¹Ø±äÁ¿ÉêÇëÄÚ´æ  
+    f_mount(fs[0],"0:",1);          //¹ÒÔØSD¿¨ 
+ 	f_mount(fs[1],"1:",1);          //¹ÒÔØSPI FLASH.   
+	
 //	TIM3_Init(9,108-1);             //108M/108=1MµÄ¼ÆÊýÆµÂÊ£¬×Ô¶¯ÖØ×°ÔØÎª100£¬ÄÇÃ´PWMÆµÂÊÎª1M/10=100khz
 	TIM5_CH1_Cap_Init(0XFFFFFFFF,108-1); //ÒÔ1MHZµÄÆµÂÊ¼ÆÊý
 	TIM3_PWM_Init(500-1,108-1);     //108M/108=1MµÄ¼ÆÊýÆµÂÊ£¬×Ô¶¯ÖØ×°ÔØÎª500£¬ÄÇÃ´PWMÆµÂÊÎª1M/500=2kHZ
@@ -542,9 +555,6 @@ void interface_task(void *p_arg)
 //ov56400ÈÎÎñº¯Êý
 void ov5640_task(void *p_arg)
 {
-							 
- 	u8 key;						   
-	u8 i;
 	
 	OS_ERR err;
 	p_arg = p_arg;
@@ -654,6 +664,7 @@ void lidar_task(void *p_arg)
 
 extern u8  TIM5CH1_CAPTURE_STA;		//ÊäÈë²¶»ñ×´Ì¬		    				
 extern u32	TIM5CH1_CAPTURE_VAL;	//ÊäÈë²¶»ñÖµ 
+u8 ult_detection;
 
 void ultrasonic_task(void *p_arg)
 {
@@ -669,6 +680,7 @@ void ultrasonic_task(void *p_arg)
 			temp=TIM5CH1_CAPTURE_STA&0X3F; 
 			temp*=0XFFFFFFFF;		 	    //Òç³öÊ±¼ä×ÜºÍ
 			temp+=TIM5CH1_CAPTURE_VAL;      //µÃµ½×ÜµÄ¸ßµçÆ½Ê±¼ä
+			temp=temp/58;
 //			printf("HIGH:%lld cm\r\n",temp/58);//´òÓ¡×ÜµÄ¸ßµãÆ½Ê±¼ä
 			TIM5CH1_CAPTURE_STA=0;          //¿ªÆôÏÂÒ»´Î²¶»ñ
 		}
@@ -676,7 +688,23 @@ void ultrasonic_task(void *p_arg)
 		delay_us(15);
 		HAL_GPIO_WritePin(GPIOB,GPIO_PIN_15,GPIO_PIN_RESET);
 
-		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±100ms
+		if(temp>100) ult_detection=0;
+		if(temp<100) ult_detection=1;
+		if(temp<50) ult_detection=2;
+		if(temp<20) 
+		{
+			ult_detection=3;
+			Left_BK(0);Right_BK(0);
+			Left_FR(1);Right_FR(0);
+			Left_BK(1);Right_BK(1);
+			OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±100ms
+			Left_BK(0);Right_BK(0);
+			Left_FR(0);Right_FR(1);
+			Left_BK(1);Right_BK(1);
+		}
+		printf("%d\r\n",ult_detection);
+		
+		OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±100ms
 	}
 }
 
@@ -699,8 +727,7 @@ void AGV_guide_task(void *p_arg)
 		if(USART_RX_STA&0x8000)
 		{					   
 			len=USART_RX_STA&0x3fff;//µÃµ½´Ë´Î½ÓÊÕµ½µÄÊý¾Ý³¤¶È
-//			HAL_UART_Transmit(&UART1_Handler,(uint8_t*)USART_RX_BUF,len,1000);	//·¢ËÍ½ÓÊÕµ½µÄÊý¾Ý
-//			while(__HAL_UART_GET_FLAG(&UART1_Handler,UART_FLAG_TC)!=SET);		//µÈ´ý·¢ËÍ½áÊø
+
 			crc_check=CRC16((uint8_t*)USART_RX_BUF,len-2);
 			if((USART_RX_BUF[len-1]==(crc_check>>8))&&(USART_RX_BUF[len-2]==(crc_check&0X00FF)))
 			{
@@ -709,9 +736,7 @@ void AGV_guide_task(void *p_arg)
 					AGV_INF[i]=USART_RX_BUF[i];
 				}
 			}
-//			printf("%x",crc_check&0x00FF);
-//			printf("%x",USART_RX_BUF[len-1]);
-//			printf("%x",USART_RX_BUF[len]);
+
 			
 			USART_RX_STA=0;
 		}
@@ -721,12 +746,7 @@ void AGV_guide_task(void *p_arg)
 		{
 			USART_RX_STORAGE++;
 			usart_rx_ss=USART_RX_STORAGE-USART_RX_STA;
-//			if(USART_RX_BUF[0]==0x20&&USART_RX_BUF[1]==0x19)
-//			{
-//				USART_RX_STA|=0x4000;
-//				USART_RX_STORAGE=0;
-//				USART_RX_FLAG=0;
-//			}
+
 			if(usart_rx_ss>2)
 			{
 				USART_RX_STA|=0x8000;
@@ -748,103 +768,99 @@ void AGV_guide_task(void *p_arg)
 //motor_driveÈÎÎñº¯Êý
 void motor_drive_task(void *p_arg)
 {
-	u8 len,flag_485;
-	u8 send_again,t;
 	u16 AGV_feedback;
-
-//	u8 receive_s_reply[8]={0x20,0x19,0x0a,0x00,0x00,0x00,0x19,0x61};
-//	u8 receive_e_reply[8]={0x20,0x19,0x0b,0x00,0x00,0x00,0x18,0x9d};
-//	u8 transmit_buf[10]={0x20,0x19,0x00,0x00,0x00,0x00,0x1a,0xb9,0x0d,0x0a};
-//	u8 RX_485BUF[10]={0x20,0x19,0x00,0x00,0x00,0x00,0x1a,0xb9,0x0d,0x0a};
-//	unsigned short crc_check;
+	u8 ult_flag=0;//¼ì²âµ½Ç°·½ÓÐÕÏ°­ÎïÊ±£¬¿ØÖÆ½øÈë±ÜÕÏÁ÷³Ì
+	u8 direction_flag=0;//Óöµ½ÕÏ°­Ê±0Ñ¡ÔñÍù×ó£¬1Ñ¡ÔñÍùÓÒ
 	
 	OS_ERR err;
 	p_arg = p_arg;
 	
-	
-	
-	
 	while(1)
 	{
-		Left_FR(0);
-		Right_FR(1);
-		Left_BK(1);
-		Right_BK(1);
-//		RS485_Receive_Data(RX_485BUF,&flag_485);
-		
-//		if(flag_485)//½ÓÊÕµ½F1»Ø¸´
-//		{	
-////			len=USART_RX_STA&0x3fff;//µÃµ½´Ë´Î½ÓÊÕµ½µÄÊý¾Ý³¤¶È
-//			crc_check=CRC16((uint8_t*)RX_485BUF,6);
-//			if((RX_485BUF[7]==(crc_check>>8))&&(RX_485BUF[6]==(crc_check&0X00FF)))
-//			{
-//				if(RX_485BUF[2]==0x0a) send_again=0;
-//				if(RX_485BUF[2]==0x0b) send_again=1;
-//			}
-//			if(send_again==1)
-//			{
-////				HAL_UART_Transmit(&UART1_Handler,(uint8_t*)transmit_buf,8,1000);	//·¢ËÍ½ÓÊÕµ½µÄÊý¾Ý
-////				while(__HAL_UART_GET_FLAG(&UART1_Handler,UART_FLAG_TC)!=SET);		//µÈ´ý·¢ËÍ½áÊø
-//				RS485_Send_Data(transmit_buf,10);//·¢ËÍ5¸ö×Ö½Ú 
-//				send_again=0;
-//			}
-
-//		}
-//		
-//		if(!flag_485)
-//		{
-			AGV_feedback=AGV_INF[4];
-			AGV_feedback=(AGV_feedback<<8)+AGV_INF[5];
-//			printf("%x",AGV_feedback);
+		AGV_feedback=AGV_INF[4];
+		AGV_feedback=(AGV_feedback<<8)+AGV_INF[5];
+//		printf("%x",AGV_feedback);
+		if(ult_detection==0&&ult_flag==0)
+		{
+			
 			if(((0x0128<AGV_feedback&&AGV_feedback<0x03c8)||(AGV_feedback==0x0108)||(AGV_feedback==0x0060))&&AGV_feedback!=0)
 			{
-				
 				TIM_SetTIM3Compare4(399);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
-				TIM_SetTIM3Compare3(399);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
-				
-//				transmit_buf[2]=0x00;transmit_buf[5]=0x00;
-//				
-//				crc_check=CRC16((uint8_t*)transmit_buf,6);
-//				transmit_buf[6]=crc_check&0X00FF;
-//				transmit_buf[7]=crc_check>>8;
-//				
-////				HAL_UART_Transmit(&UART1_Handler,(uint8_t*)transmit_buf,8,1000);	//·¢ËÍ½ÓÊÕµ½µÄÊý¾Ý
-////				while(__HAL_UART_GET_FLAG(&UART1_Handler,UART_FLAG_TC)!=SET);		//µÈ´ý·¢ËÍ½áÊø
-//				RS485_Send_Data(transmit_buf,10);//·¢ËÍ5¸ö×Ö½Ú 
+				TIM_SetTIM3Compare3(399);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ	
 			}
-				
+					
 			if((AGV_feedback<0x0128)&&(AGV_feedback!=0x0108)&&(AGV_feedback!=0x0060)&&AGV_feedback!=0)
-			{
-				
-				TIM_SetTIM3Compare4(299);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È
-				TIM_SetTIM3Compare3(399);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È
-//				transmit_buf[2]=0x01;transmit_buf[5]=0x01;
-//				
-//				crc_check=CRC16((uint8_t*)transmit_buf,6);
-//				transmit_buf[6]=crc_check&0X00FF;
-//				transmit_buf[7]=crc_check>>8;
-//				
-////				HAL_UART_Transmit(&UART1_Handler,(uint8_t*)transmit_buf,8,1000);	//·¢ËÍ½ÓÊÕµ½µÄÊý¾Ý
-////				while(__HAL_UART_GET_FLAG(&UART1_Handler,UART_FLAG_TC)!=SET);		//µÈ´ý·¢ËÍ½áÊø
-//				RS485_Send_Data(transmit_buf,10);//·¢ËÍ5¸ö×Ö½Ú 
-				
+			{					
+				TIM_SetTIM3Compare4(299);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
+				TIM_SetTIM3Compare3(399);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ		
 			}
+			
 			if(AGV_feedback>0x03c8)
 			{
-				TIM_SetTIM3Compare4(399);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È
-				TIM_SetTIM3Compare3(299);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È
-//				transmit_buf[2]=0x01;transmit_buf[5]=0x02;
-//				
-//				crc_check=CRC16((uint8_t*)transmit_buf,6);
-//				transmit_buf[6]=crc_check&0X00FF;
-//				transmit_buf[7]=crc_check>>8;
-//				
-////				HAL_UART_Transmit(&UART1_Handler,(uint8_t*)transmit_buf,8,1000);	//·¢ËÍ½ÓÊÕµ½µÄÊý¾Ý
-////				while(__HAL_UART_GET_FLAG(&UART1_Handler,UART_FLAG_TC)!=SET);		//µÈ´ý·¢ËÍ½áÊø
-//				RS485_Send_Data(transmit_buf,10);//·¢ËÍ5¸ö×Ö½Ú 
+				TIM_SetTIM3Compare4(399);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
+				TIM_SetTIM3Compare3(299);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
 			}
-//		}
-		
+			
+		}
+		if(ult_detection==1) ult_flag=1;//¼ì²âµ½Ç°·½Ò»Ã×ÓÐÕÏ°­
+			
+		if(ult_flag==1&&direction_flag==0)
+		{
+			TIM_SetTIM3Compare4(449);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
+			TIM_SetTIM3Compare3(498);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
+			OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
+			if(ult_detection==0)
+			{
+				TIM_SetTIM3Compare4(449);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
+				TIM_SetTIM3Compare3(449);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
+				OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
+				TIM_SetTIM3Compare4(498);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
+				TIM_SetTIM3Compare3(449);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓ
+				OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
+				
+			}
+			if(ult_detection>1)
+			{
+				direction_flag=1;
+				Left_BK(0);Right_BK(0);
+				Left_FR(1);Right_FR(0);
+				Left_BK(1);Right_BK(1);
+				TIM_SetTIM3Compare4(449);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
+				TIM_SetTIM3Compare3(498);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
+				OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
+				Left_BK(0);Right_BK(0);
+				Left_FR(0);Right_FR(1);
+				Left_BK(1);Right_BK(1);
+			}
+				
+		}
+		if(ult_flag==1&&direction_flag==1)
+		{
+			TIM_SetTIM3Compare4(498);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
+			TIM_SetTIM3Compare3(449);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
+			OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
+			if(ult_detection==0)
+			{
+				TIM_SetTIM3Compare4(449);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
+				TIM_SetTIM3Compare3(449);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
+				OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
+				TIM_SetTIM3Compare4(449);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
+				TIM_SetTIM3Compare3(498);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
+			}
+			if(ult_detection>1)
+			{
+				direction_flag=1;
+				Left_BK(0);Right_BK(0);
+				Left_FR(1);Right_FR(0);
+				Left_BK(1);Right_BK(1);
+				TIM_SetTIM3Compare4(449);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
+				TIM_SetTIM3Compare3(498);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
+				OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
+				Left_BK(0);Right_BK(0);
+				Left_FR(0);Right_FR(1);
+				Left_BK(1);Right_BK(1);
+			}
+		}			
 		
 		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±10ms
 		
