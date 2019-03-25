@@ -200,7 +200,7 @@ int main(void)
 	KEY_Init();                     //初始化按键
 	SDRAM_Init();                   //初始化SDRAM
 	LCD_Init();                     //初始化LCD
-	RS485_Init(115200);		        //初始化RS485
+	RS485_Init(9600);		        //初始化RS485
 	ultrasonic_init();              //初始化超声波传感器
 	motor_drive_Init();
 	
@@ -673,7 +673,7 @@ void ov5640_task(void *p_arg)
 
 }
 
-
+u8 RFID_485_BUF[15];
 
 //lidar任务函数
 void RFID_task(void *p_arg)
@@ -681,6 +681,7 @@ void RFID_task(void *p_arg)
 	u8 len,i;
 	long num;
 	u8 receive[50];
+	u8 RFID_485_STA;
 	OS_ERR err;
 	p_arg = p_arg;
 	
@@ -689,21 +690,24 @@ void RFID_task(void *p_arg)
 		if(tp_dev.sta&TP_PRES_DOWN)			//触摸屏被按下
 		{
 			seconfary_menu=1;
+			
 		}
 		LCD_ShowString(20,160,200,16,32,(u8*)"result:");
-		if(USART_RX_STA&0x8000)
+		RS485_Receive_Data(RFID_485_BUF,&RFID_485_STA);
+		if(RFID_485_STA)
 		{
-			len=USART_RX_STA&0x3fff;//得到此次接收到的数据长度
+			len=RFID_485_STA&0x3fff;//得到此次接收到的数据长度
 			for(i=0;i<len;i++)
 			{
 //				num=USART_RX_BUF[i]*pow(10,(len-i));
-				receive[i]=USART_RX_BUF[i];
+				receive[i]=RFID_485_BUF[i];
+				printf("%x",RFID_485_BUF[i]);
 				LCD_ShowChar(20+i*20,200,receive[i],24,0);
 			}
 
-			USART_RX_STA=0;
-		}else OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
-		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+//			USART_RX_STA=0;
+		}
+		OSTimeDlyHMSM(0,0,0,8,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
 	}
 }
 
@@ -753,7 +757,7 @@ void ultrasonic_task(void *p_arg)
 			temp+=TIM5CH1_CAPTURE_VAL;      //得到总的高电平时间
 			temp=temp/58;
 			
-			printf("HIGH:%lld cm\r\n",temp);//打印总的高点平时间		
+//			printf("HIGH:%lld cm\r\n",temp);//打印总的高点平时间		
 			if(temp>60)
 			{
 				ult_times0++;
@@ -825,11 +829,11 @@ void ultrasonic_task(void *p_arg)
 u8 USART_RX_FLAG;
 u16 USART_RX_STORAGE;
 u8 AGV_INF[8];
-
+u8 AGV_485_BUF[8];
 void AGV_guide_task(void *p_arg)
 {
 	u8 len,i;
-
+	u8 AGV_485_STA;
 	u16 usart_rx_ss;
 	unsigned short crc_check;
 
@@ -838,41 +842,43 @@ void AGV_guide_task(void *p_arg)
 	
 	while(1)
 	{
-		if(USART_RX_STA&0x8000)
+		
+		RS485_Receive_Data(AGV_485_BUF,&AGV_485_STA);
+		if(AGV_485_STA)
 		{					   
-			len=USART_RX_STA&0x3fff;//得到此次接收到的数据长度
-
-			crc_check=CRC16((uint8_t*)USART_RX_BUF,len-2);
-			if((USART_RX_BUF[len-1]==(crc_check>>8))&&(USART_RX_BUF[len-2]==(crc_check&0X00FF)))
+//			len=USART_RX_STA&0x3fff;//得到此次接收到的数据长度
+			if(AGV_485_STA>8) AGV_485_STA=8;
+			crc_check=CRC16((uint8_t*)AGV_485_BUF,6);
+			if((AGV_485_BUF[7]==(crc_check>>8))&&(AGV_485_BUF[6]==(crc_check&0X00FF)))
 			{
-				for(i=0;i<len;i++)
+				for(i=0;i<8;i++)
 				{
-					AGV_INF[i]=USART_RX_BUF[i];
+					AGV_INF[i]=AGV_485_BUF[i];
 				}
 			}
-			USART_RX_STA=0;
+//			USART_RX_STA=0;
 		}
 
-		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err); //延时100ms
+		OSTimeDlyHMSM(0,0,0,5,OS_OPT_TIME_HMSM_STRICT,&err); //延时100ms
 			
-		if(USART_RX_FLAG==1)
-		{
-			USART_RX_STORAGE++;
-			usart_rx_ss=USART_RX_STORAGE-USART_RX_STA;
+//		if(USART_RX_FLAG==1)
+//		{
+//			USART_RX_STORAGE++;
+//			usart_rx_ss=USART_RX_STORAGE-USART_RX_STA;
 
-			if(usart_rx_ss>2)
-			{
-				USART_RX_STA|=0x8000;
-				USART_RX_STORAGE=0;
-				USART_RX_FLAG=0;
-			}
-			if(USART_RX_STA==8)
-			{
-				USART_RX_STA|=0x8000;
-				USART_RX_STORAGE=0;
-				USART_RX_FLAG=0;
-			}
-		}
+//			if(usart_rx_ss>2)
+//			{
+//				USART_RX_STA|=0x8000;
+//				USART_RX_STORAGE=0;
+//				USART_RX_FLAG=0;
+//			}
+//			if(USART_RX_STA==8)
+//			{
+//				USART_RX_STA|=0x8000;
+//				USART_RX_STORAGE=0;
+//				USART_RX_FLAG=0;
+//			}
+//		}
 		
 	}
 }
@@ -886,6 +892,7 @@ void motor_drive_task(void *p_arg)
 	u8 ult_flag=0;//检测到前方有障碍物时，控制进入避障流程
 	u8 direction_flag=0;//遇到障碍时0选择往左，1选择往右
 	u8 process_control=0;
+	u8 i;
 	OS_ERR err;
 	p_arg = p_arg;
 	
@@ -905,13 +912,12 @@ void motor_drive_task(void *p_arg)
 					
 			if((AGV_feedback<0x0128)&&(AGV_feedback!=0x0108)&&(AGV_feedback!=0x0060)&&AGV_feedback!=0)
 			{					
-				if(process_control>4)
+				if(process_control==6)
 				{
 					TIM_SetTIM3Compare4(429);	//修改比较值，修改占空比左
 					TIM_SetTIM3Compare3(349);	//修改比较值，修改占空比右
-					process_control++;	
-					if(process_control>180) process_control=0;
-						
+					process_control=0;	
+					OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s	
 				}
 				else
 				{
@@ -922,12 +928,13 @@ void motor_drive_task(void *p_arg)
 			
 			if(AGV_feedback>0x03c8)
 			{
-				if(process_control>4)
+				if(process_control==6)
 				{
 					TIM_SetTIM3Compare4(349);	//修改比较值，修改占空比左
 					TIM_SetTIM3Compare3(429);	//修改比较值，修改占空比右
-					process_control++;	
-					if(process_control>180) process_control=0;
+					process_control=0;	
+					OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
+
 				}
 				else
 				{
@@ -982,23 +989,20 @@ void motor_drive_task(void *p_arg)
 					TIM_SetTIM3Compare4(498);	//修改比较值，修改占空比左
 					TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
 					process_control=5;
-					OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
+					AGV_feedback=0;
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
 				}
 				if(process_control==5)
 				{
 					TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
 					TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
-					if(AGV_feedback!=0) 
-					{
-//						printf("AGV_feedbackAGV_feedback:\r\n\r\n%x\r\n\r\n",AGV_feedback);
-//						TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
-//						TIM_SetTIM3Compare3(498);	//修改比较值，修改占空比右
-						ult_flag=0;
-//						process_control=0;
-						OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
-						printf("cc\r\n");
-					}
-					printf("b\r\n");
+					process_control=6;
+
+					ult_flag=0;
+//					process_control=0;
+//					OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
+					printf("cc\r\n");
+
 				}
 				
 			}
@@ -1081,15 +1085,15 @@ void motor_drive_task(void *p_arg)
 					TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
 					TIM_SetTIM3Compare3(498);	//修改比较值，修改占空比右
 					process_control=5;
-					OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
 				}
 				if(process_control==5)
 				{
 					
 					TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
 					TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
-					if(AGV_feedback!=0)
-					{
+//					if(AGV_feedback!=0)
+//					{
 //						printf("AGV_feedbackAGV_feedback:\r\n\r\n%x\r\n\r\n",AGV_feedback);
 //						TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
 //						TIM_SetTIM3Compare3(498);	//修改比较值，修改占空比右
@@ -1097,9 +1101,9 @@ void motor_drive_task(void *p_arg)
 						direction_flag=0;
 //						process_control=0;
 						printf("ff\r\n");
-						OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
-					}
-					printf("w\r\n");
+//						OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
+//					}
+//					printf("w\r\n");
 				}
 				
 			}
@@ -1142,7 +1146,7 @@ void motor_drive_task(void *p_arg)
 			}
 		}			
 		
-		printf("%d %d %d\r\n",ult_detection,direction_flag,ult_flag);
+//		printf("%d %d %d\r\n",ult_detection,direction_flag,ult_flag);
 		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err); //延时10ms
 		
 	}
