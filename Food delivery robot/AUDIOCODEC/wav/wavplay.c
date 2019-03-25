@@ -166,6 +166,8 @@ void wav_get_curtime(FIL*fx,__wavctrl *wavx)
 //KEY0_PRES:下一曲
 //KEY1_PRES:上一曲
 //其他:错误
+extern u8 music_play;
+
 u8 wav_play_song(u8* fname)
 {
 	u8 key;
@@ -217,10 +219,11 @@ u8 wav_play_song(u8* fname)
 					while(1)
 					{
 						key=KEY_Scan(0); 
-						if(key==WKUP_PRES)//暂停
+						if(music_play==0)//暂停
 						{
-							if(audiodev.status&0X01)audiodev.status&=~(1<<0);
-							else audiodev.status|=0X01;  
+//							if(audiodev.status&0X01)audiodev.status&=~(1<<0);
+//							else audiodev.status|=0X01; 
+							audiodev.status&=~(1<<0);
 						}
 						if(key==KEY2_PRES||key==KEY0_PRES)//下一曲/上一曲
 						{
@@ -228,7 +231,7 @@ u8 wav_play_song(u8* fname)
 							break; 
 						}
 						wav_get_curtime(audiodev.file,&wavctrl);//得到总时间和当前播放的时间 
-						audio_msg_show(wavctrl.totsec,wavctrl.cursec,wavctrl.bitrate);
+//						audio_msg_show(wavctrl.totsec,wavctrl.cursec,wavctrl.bitrate);
 						t++;
 						if(t==20)
 						{

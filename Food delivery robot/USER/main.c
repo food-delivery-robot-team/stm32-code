@@ -83,7 +83,7 @@ CPU_STK ov5640_TASK_STK[ov5640_STK_SIZE];
 void ov5640_task(void *p_arg);
 
 //»ŒŒÒ”≈œ»º∂
-#define motor_drive_TASK_PRIO		5
+#define motor_drive_TASK_PRIO		4
 //»ŒŒÒ∂—’ª¥Û–°	
 #define motor_drive_STK_SIZE 		256
 //»ŒŒÒøÿ÷∆øÈ
@@ -94,7 +94,7 @@ void motor_drive_task(void *p_arg);
 
 
 //»ŒŒÒ”≈œ»º∂
-#define ultrasonic_TASK_PRIO		5
+#define ultrasonic_TASK_PRIO		4
 //»ŒŒÒ∂—’ª¥Û–°	
 #define ultrasonic_STK_SIZE 		256
 //»ŒŒÒøÿ÷∆øÈ
@@ -104,7 +104,7 @@ CPU_STK ultrasonic_TASK_STK[ultrasonic_STK_SIZE];
 void ultrasonic_task(void *p_arg);
 
 //»ŒŒÒ”≈œ»º∂
-#define AGV_guide_TASK_PRIO		4
+#define AGV_guide_TASK_PRIO		5
 //»ŒŒÒ∂—’ª¥Û–°	
 #define AGV_guide_STK_SIZE 		128
 //»ŒŒÒøÿ÷∆øÈ
@@ -114,7 +114,7 @@ CPU_STK AGV_guide_TASK_STK[AGV_guide_STK_SIZE];
 void AGV_guide_task(void *p_arg);
 
 //»ŒŒÒ”≈œ»º∂
-#define lidar_TASK_PRIO		4
+#define lidar_TASK_PRIO		5
 //»ŒŒÒ∂—’ª¥Û–°	
 #define lidar_STK_SIZE       256
 //»ŒŒÒøÿ÷∆øÈ
@@ -125,7 +125,7 @@ CPU_STK lidar_TASK_STK[lidar_STK_SIZE];
 void lidar_task(void *p_arg);
 
 //»ŒŒÒ”≈œ»º∂
-#define RFID_TASK_PRIO		4
+#define RFID_TASK_PRIO		5
 //»ŒŒÒ∂—’ª¥Û–°	
 #define RFID_STK_SIZE       128
 //»ŒŒÒøÿ÷∆øÈ
@@ -134,6 +134,17 @@ OS_TCB RFIDTaskTCB;
 CPU_STK RFID_TASK_STK[RFID_STK_SIZE];
 //»ŒŒÒ∫Ø ˝
 void RFID_task(void *p_arg);
+
+//»ŒŒÒ”≈œ»º∂
+#define MUSIC_TASK_PRIO		5
+//»ŒŒÒ∂—’ª¥Û–°	
+#define MUSIC_STK_SIZE       256
+//»ŒŒÒøÿ÷∆øÈ
+OS_TCB MUSICTaskTCB;
+//»ŒŒÒ∂—’ª	
+CPU_STK MUSIC_TASK_STK[MUSIC_STK_SIZE];
+//»ŒŒÒ∫Ø ˝
+void MUSIC_task(void *p_arg);
 
 //»ŒŒÒ”≈œ»º∂
 #define runing_TASK_PRIO		4
@@ -176,7 +187,7 @@ int main(void)
     OS_ERR err;
 	CPU_SR_ALLOC();
     
-	float fac;
+//	float fac;
 	
     Write_Through();                //Õ∏–¥
     Cache_Enable();                 //¥Úø™L1-Cache
@@ -192,13 +203,14 @@ int main(void)
 	RS485_Init(115200);		        //≥ı ºªØRS485
 	ultrasonic_init();              //≥ı ºªØ≥¨…˘≤®¥´∏–∆˜
 	motor_drive_Init();
-	W25QXX_Init();				   	//≥ı ºªØW25Q256
-	W25QXX_Init();				    //≥ı ºªØW25Q256
-    WM8978_Init();				    //≥ı ºªØWM8978
-	WM8978_HPvol_Set(40,40);	    //∂˙ª˙“Ù¡ø…Ë÷√
-	WM8978_SPKvol_Set(50);		    //¿Æ∞»“Ù¡ø…Ë÷√
-	PCF8574_Init();									//≥ı ºªØPCF8574
-	OV5640_Init();									//≥ı ºªØOV5640
+	
+//	W25QXX_Init();				   	//≥ı ºªØW25Q256
+//	W25QXX_Init();				    //≥ı ºªØW25Q256
+//    WM8978_Init();				    //≥ı ºªØWM8978
+//	WM8978_HPvol_Set(40,40);	    //∂˙ª˙“Ù¡ø…Ë÷√
+//	WM8978_SPKvol_Set(30);		    //¿Æ∞»“Ù¡ø…Ë÷√
+//	PCF8574_Init();					//≥ı ºªØPCF8574
+//	OV5640_Init();					//≥ı ºªØOV5640
 	tp_dev.init();				    //≥ı ºªØ¥•√˛∆¡
 	my_mem_init(SRAMIN);            //≥ı ºªØƒ⁄≤øƒ⁄¥Ê≥ÿ
 	my_mem_init(SRAMEX);            //≥ı ºªØÕ‚≤øSDRAMƒ⁄¥Ê≥ÿ
@@ -225,51 +237,51 @@ int main(void)
 		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±200ms				  
 	}  	 
 
-	while(OV5640_Init())//≥ı ºªØOV5640
-	{
-		Show_Str(30,190,240,16,(u8*)"OV5640 ¥ÌŒÛ!",16,0);
-		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±200ms
-	    LCD_Fill(30,190,239,206,WHITE);
-		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±200ms
-	}	
+//	while(OV5640_Init())//≥ı ºªØOV5640
+//	{
+//		Show_Str(30,190,240,16,(u8*)"OV5640 ¥ÌŒÛ!",16,0);
+//		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±200ms
+//	    LCD_Fill(30,190,239,206,WHITE);
+//		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±200ms
+//	}	
 	//◊‘∂Ø∂‘Ωπ≥ı ºªØ
-	OV5640_RGB565_Mode();		//RGB565ƒ£ Ω 
-	OV5640_Focus_Init(); 
-	OV5640_Light_Mode(0);		//◊‘∂Øƒ£ Ω
-	OV5640_Color_Saturation(3);	//…´≤ ±•∫Õ∂»0
-	OV5640_Brightness(4);		//¡¡∂»0
-	OV5640_Contrast(3);			//∂‘±»∂»0
-	OV5640_Sharpness(33);		//◊‘∂Ø»Ò∂»
-	OV5640_Focus_Constant();//∆Ù∂Ø≥÷–¯∂‘Ωπ
-	DCMI_Init();						//DCMI≈‰÷√ 
+//	OV5640_RGB565_Mode();		//RGB565ƒ£ Ω 
+//	OV5640_Focus_Init(); 
+//	OV5640_Light_Mode(0);		//◊‘∂Øƒ£ Ω
+//	OV5640_Color_Saturation(3);	//…´≤ ±•∫Õ∂»0
+//	OV5640_Brightness(4);		//¡¡∂»0
+//	OV5640_Contrast(3);			//∂‘±»∂»0
+//	OV5640_Sharpness(33);		//◊‘∂Ø»Ò∂»
+//	OV5640_Focus_Constant();//∆Ù∂Ø≥÷–¯∂‘Ωπ
+//	DCMI_Init();						//DCMI≈‰÷√ 
 
-	
-	
-		
-	qr_image_width=lcddev.width;
-	if(qr_image_width>480)qr_image_width=480;//’‚¿Ôqr_image_width…Ë÷√Œ™240µƒ±∂ ˝
-	if(qr_image_width==320)qr_image_width=240;
-	Show_Str(0,(lcddev.height+qr_image_width)/2+4,240,16,(u8*)" ∂±Ω·π˚£∫",16,1);
-	
-	dcmi_line_buf[0]=mymalloc(SRAMIN,qr_image_width*2);						//Œ™––ª∫¥ÊΩ” ’…Í«Îƒ⁄¥Ê	
-	dcmi_line_buf[1]=mymalloc(SRAMIN,qr_image_width*2);						//Œ™––ª∫¥ÊΩ” ’…Í«Îƒ⁄¥Ê
-	rgb_data_buf=mymalloc(SRAMEX,qr_image_width*qr_image_width*2);//Œ™rgb÷°ª∫¥Ê…Í«Îƒ⁄¥Ê
-	
-	dcmi_rx_callback=qr_dcmi_rx_callback;//DMA ˝æ›Ω” ’÷–∂œªÿµ˜∫Ø ˝
-	DCMI_DMA_Init((u32)dcmi_line_buf[0],(u32)dcmi_line_buf[1],qr_image_width/2,DMA_MDATAALIGN_HALFWORD,DMA_MINC_ENABLE);//DCMI DMA≈‰÷√  
-	fac=800/qr_image_width;	//µ√µΩ±»¿˝“Ú◊”
-	OV5640_OutSize_Set((1280-fac*qr_image_width)/2,(800-fac*qr_image_width)/2,qr_image_width,qr_image_width); 
-	DCMI_Start(); 					//∆Ù∂Ø¥´ ‰	 
-		
-	printf("SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
-	printf("SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
-	printf("SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM)); 
-	
-	atk_qr_init();//≥ı ºªØ ∂±ø‚£¨Œ™À„∑®…Í«Îƒ⁄¥Ê
-	
-	printf("1SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
-	printf("1SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
-	printf("1SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM));
+//	
+//	
+//		
+//	qr_image_width=lcddev.width;
+//	if(qr_image_width>480)qr_image_width=480;//’‚¿Ôqr_image_width…Ë÷√Œ™240µƒ±∂ ˝
+//	if(qr_image_width==320)qr_image_width=240;
+//	Show_Str(0,(lcddev.height+qr_image_width)/2+4,240,16,(u8*)" ∂±Ω·π˚£∫",16,1);
+//	
+//	dcmi_line_buf[0]=mymalloc(SRAMIN,qr_image_width*2);						//Œ™––ª∫¥ÊΩ” ’…Í«Îƒ⁄¥Ê	
+//	dcmi_line_buf[1]=mymalloc(SRAMIN,qr_image_width*2);						//Œ™––ª∫¥ÊΩ” ’…Í«Îƒ⁄¥Ê
+//	rgb_data_buf=mymalloc(SRAMEX,qr_image_width*qr_image_width*2);//Œ™rgb÷°ª∫¥Ê…Í«Îƒ⁄¥Ê
+//	
+//	dcmi_rx_callback=qr_dcmi_rx_callback;//DMA ˝æ›Ω” ’÷–∂œªÿµ˜∫Ø ˝
+//	DCMI_DMA_Init((u32)dcmi_line_buf[0],(u32)dcmi_line_buf[1],qr_image_width/2,DMA_MDATAALIGN_HALFWORD,DMA_MINC_ENABLE);//DCMI DMA≈‰÷√  
+//	fac=800/qr_image_width;	//µ√µΩ±»¿˝“Ú◊”
+//	OV5640_OutSize_Set((1280-fac*qr_image_width)/2,(800-fac*qr_image_width)/2,qr_image_width,qr_image_width); 
+//	DCMI_Start(); 					//∆Ù∂Ø¥´ ‰	 
+//		
+//	printf("SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
+//	printf("SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
+//	printf("SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM)); 
+//	
+//	atk_qr_init();//≥ı ºªØ ∂±ø‚£¨Œ™À„∑®…Í«Îƒ⁄¥Ê
+//	
+//	printf("1SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
+//	printf("1SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
+//	printf("1SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM));
 	
 	
 
@@ -404,7 +416,20 @@ void start_task(void *p_arg)
                  (void   	* )0,				
                  (OS_OPT      )OS_OPT_TASK_STK_CHK|OS_OPT_TASK_STK_CLR|OS_OPT_TASK_SAVE_FP, 
                  (OS_ERR 	* )&err);
-
+//¥¥Ω®RFID»ŒŒÒ
+	OSTaskCreate((OS_TCB 	* )&MUSICTaskTCB,		
+				 (CPU_CHAR	* )"MUSIC task", 		
+                 (OS_TASK_PTR )MUSIC_task, 			
+                 (void		* )0,					
+                 (OS_PRIO	  )MUSIC_TASK_PRIO,     	
+                 (CPU_STK   * )&MUSIC_TASK_STK[0],	
+                 (CPU_STK_SIZE)MUSIC_STK_SIZE/10,	
+                 (CPU_STK_SIZE)MUSIC_STK_SIZE,		
+                 (OS_MSG_QTY  )0,					
+                 (OS_TICK	  )0,					
+                 (void   	* )0,				
+                 (OS_OPT      )OS_OPT_TASK_STK_CHK|OS_OPT_TASK_STK_CLR|OS_OPT_TASK_SAVE_FP, 
+                 (OS_ERR 	* )&err);
 //¥¥Ω®ultrasonic»ŒŒÒ
 	OSTaskCreate((OS_TCB 	* )&ultrasonicTaskTCB,		
 				 (CPU_CHAR	* )"ultrasonic task", 		
@@ -478,30 +503,22 @@ void runing_task(void *p_arg)
 //				printf("%d   %d",tp_dev.x[0],tp_dev.y[0]);
 				if(tp_dev.x[0]>20&&tp_dev.y[0]>20&&tp_dev.x[0]<160&&tp_dev.y[0]<80&&seconfary_menu==0)
 				{
-					
-
-						OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
-						OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);	
-	//					printf("resume\r\n");
-
+					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
+					OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);	
+	//				printf("resume\r\n");
 				}
 				else if(tp_dev.x[0]>20&&tp_dev.y[0]>100&&tp_dev.x[0]<160&&tp_dev.y[0]<180&&seconfary_menu==0)
 				{
-
-						OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
-						OSTaskResume((OS_TCB*)&RFIDTaskTCB,&err);	
-
+					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
+					OSTaskResume((OS_TCB*)&RFIDTaskTCB,&err);	
 				}
 				else if(tp_dev.x[0]>20&&tp_dev.y[0]>200&&tp_dev.x[0]<160&&tp_dev.y[0]<280&&seconfary_menu==0)
 				{
-
-						OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
-						OSTaskResume((OS_TCB*)&lidarTaskTCB,&err);	
-
+					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
+					OSTaskResume((OS_TCB*)&lidarTaskTCB,&err);	
 				}
 				else if(tp_dev.x[0]>180&&tp_dev.y[0]>20&&tp_dev.x[0]<280&&tp_dev.y[0]<80)
 				{
-					
 					OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
 					OSTaskSuspend((OS_TCB*)&RFIDTaskTCB,&err);
 					OSTaskSuspend((OS_TCB*)&lidarTaskTCB,&err);
@@ -509,7 +526,6 @@ void runing_task(void *p_arg)
 //					LCD_Clear(WHITE);
 					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
 					seconfary_menu=0;
-
 				}
 				else OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//√ª”–∞¥º¸∞¥œ¬µƒ ±∫Ú 			   
 			}
@@ -555,6 +571,8 @@ void interface_task(void *p_arg)
 //ov56400»ŒŒÒ∫Ø ˝
 void ov5640_task(void *p_arg)
 {
+	float fac;
+	u8 i;
 	
 	OS_ERR err;
 	p_arg = p_arg;
@@ -592,15 +610,65 @@ void ov5640_task(void *p_arg)
 			if(tp_dev.sta&TP_PRES_DOWN)			//¥•√˛∆¡±ª∞¥œ¬
 			{
 				seconfary_menu=1;
+				i++;
+				
 			}
 			OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±200ms
+			if(i>0) 
+			{
+				OV5640_Init();					//≥ı ºªØOV5640
+				
+				while(OV5640_Init())//≥ı ºªØOV5640
+				{
+					Show_Str(30,190,240,16,(u8*)"OV5640 ¥ÌŒÛ!",16,0);
+					OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±200ms
+					LCD_Fill(30,190,239,206,WHITE);
+					OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±200ms
+				}	
+				//◊‘∂Ø∂‘Ωπ≥ı ºªØ
+				OV5640_RGB565_Mode();		//RGB565ƒ£ Ω 
+				OV5640_Focus_Init(); 
+				OV5640_Light_Mode(0);		//◊‘∂Øƒ£ Ω
+				OV5640_Color_Saturation(3);	//…´≤ ±•∫Õ∂»0
+				OV5640_Brightness(4);		//¡¡∂»0
+				OV5640_Contrast(3);			//∂‘±»∂»0
+				OV5640_Sharpness(33);		//◊‘∂Ø»Ò∂»
+				OV5640_Focus_Constant();//∆Ù∂Ø≥÷–¯∂‘Ωπ
+				DCMI_Init();						//DCMI≈‰÷√ 
+				
+				qr_image_width=lcddev.width;
+				if(qr_image_width>480)qr_image_width=480;//’‚¿Ôqr_image_width…Ë÷√Œ™240µƒ±∂ ˝
+				if(qr_image_width==320)qr_image_width=240;
+				Show_Str(0,(lcddev.height+qr_image_width)/2+4,240,16,(u8*)" ∂±Ω·π˚£∫",16,1);
+				
+				dcmi_line_buf[0]=mymalloc(SRAMIN,qr_image_width*2);						//Œ™––ª∫¥ÊΩ” ’…Í«Îƒ⁄¥Ê	
+				dcmi_line_buf[1]=mymalloc(SRAMIN,qr_image_width*2);						//Œ™––ª∫¥ÊΩ” ’…Í«Îƒ⁄¥Ê
+				rgb_data_buf=mymalloc(SRAMEX,qr_image_width*qr_image_width*2);//Œ™rgb÷°ª∫¥Ê…Í«Îƒ⁄¥Ê
+				
+				dcmi_rx_callback=qr_dcmi_rx_callback;//DMA ˝æ›Ω” ’÷–∂œªÿµ˜∫Ø ˝
+				DCMI_DMA_Init((u32)dcmi_line_buf[0],(u32)dcmi_line_buf[1],qr_image_width/2,DMA_MDATAALIGN_HALFWORD,DMA_MINC_ENABLE);//DCMI DMA≈‰÷√  
+				fac=800/qr_image_width;	//µ√µΩ±»¿˝“Ú◊”
+				OV5640_OutSize_Set((1280-fac*qr_image_width)/2,(800-fac*qr_image_width)/2,qr_image_width,qr_image_width); 
+				DCMI_Start(); 					//∆Ù∂Ø¥´ ‰	 
+					
+				printf("SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
+				printf("SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
+				printf("SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM)); 
+				
+				atk_qr_init();//≥ı ºªØ ∂±ø‚£¨Œ™À„∑®…Í«Îƒ⁄¥Ê
+				
+				printf("1SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
+				printf("1SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
+				printf("1SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM));
+				i=0;
+			}
 			if(readok==1)			//≤…ºØµΩ¡À“ª÷°ÕºœÒ
 			{		
 				readok=0;
 				qr_show_image((lcddev.width-qr_image_width)/2,(lcddev.height-qr_image_width)/2,qr_image_width,qr_image_width,rgb_data_buf);
 				qr_decode(qr_image_width,rgb_data_buf);
 			}
-//			printf("1\r\n");
+
 		}
 
 }
@@ -654,7 +722,7 @@ void lidar_task(void *p_arg)
 			seconfary_menu=1;
 		}
 		
-		LCD_ShowString(20,160,200,16,32,(u8*)"lidar:");
+//		LCD_ShowString(20,160,200,16,32,(u8*)"lidar:");
 		
 		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±200ms
 		
@@ -665,10 +733,13 @@ void lidar_task(void *p_arg)
 extern u8  TIM5CH1_CAPTURE_STA;		// ‰»Î≤∂ªÒ◊¥Ã¨		    				
 extern u32	TIM5CH1_CAPTURE_VAL;	// ‰»Î≤∂ªÒ÷µ 
 u8 ult_detection;
+u8 music_play;
 
 void ultrasonic_task(void *p_arg)
 {
 	long long temp=0;
+	u8 ult_times0,ult_times1,ult_times2;
+	long long ult_temp=0;
 	
 	OS_ERR err;
 	p_arg = p_arg;
@@ -681,30 +752,73 @@ void ultrasonic_task(void *p_arg)
 			temp*=0XFFFFFFFF;		 	    //“Á≥ˆ ±º‰◊‹∫Õ
 			temp+=TIM5CH1_CAPTURE_VAL;      //µ√µΩ◊‹µƒ∏ﬂµÁ∆Ω ±º‰
 			temp=temp/58;
-//			printf("HIGH:%lld cm\r\n",temp/58);//¥Ú”°◊‹µƒ∏ﬂµ„∆Ω ±º‰
+			
+			printf("HIGH:%lld cm\r\n",temp);//¥Ú”°◊‹µƒ∏ﬂµ„∆Ω ±º‰		
+			if(temp>60)
+			{
+				ult_times0++;
+				ult_times1=0;
+				ult_times2=0;
+				if(ult_times0>2)
+				{
+					ult_detection=0;
+					ult_times0=0;
+				}
+			}
+	//		if(temp<100&&temp>50)
+	//		{
+	//			ult_times++;
+	//			if(ult_times>2)
+	//			{
+	//				ult_detection=1;
+	//				ult_times=0;
+	//			}
+	//		}
+			if(temp<60&&temp>20) 
+			{	
+				ult_times1++;
+				ult_times0=0;
+				ult_times2=0;
+				if(ult_times1>2)
+				{
+					music_play=1;
+					ult_detection=1;
+					ult_times1=0;
+				}
+			}
+			if(temp<20&&temp>5) 
+			{
+				ult_times2++;
+				ult_times1=0;
+				ult_times0=0;
+				if(ult_times2>2)
+				{
+					music_play=0;
+					ult_detection=2;
+					Left_BK(0);Right_BK(0);
+					Left_FR(1);Right_FR(0);
+					Left_BK(1);Right_BK(1);
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±100ms
+					Left_BK(0);Right_BK(0);
+					Left_FR(0);Right_FR(1);
+					Left_BK(1);Right_BK(1);
+					ult_times2=0;
+				}
+			}
+//			printf("music:%d\r\n\r\n",music_play);
+
 			TIM5CH1_CAPTURE_STA=0;          //ø™∆Ùœ¬“ª¥Œ≤∂ªÒ
 		}
 		HAL_GPIO_WritePin(GPIOB,GPIO_PIN_15,GPIO_PIN_SET);
 		delay_us(15);
 		HAL_GPIO_WritePin(GPIOB,GPIO_PIN_15,GPIO_PIN_RESET);
 
-		if(temp>100) ult_detection=0;
-		if(temp<100) ult_detection=1;
-		if(temp<50) ult_detection=2;
-		if(temp<20) 
-		{
-			ult_detection=3;
-			Left_BK(0);Right_BK(0);
-			Left_FR(1);Right_FR(0);
-			Left_BK(1);Right_BK(1);
-			OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±100ms
-			Left_BK(0);Right_BK(0);
-			Left_FR(0);Right_FR(1);
-			Left_BK(1);Right_BK(1);
-		}
-		printf("%d\r\n",ult_detection);
 		
-		OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±100ms
+		
+		
+//		printf("%d\r\n",ult_detection);
+		
+		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±100ms
 	}
 }
 
@@ -736,10 +850,9 @@ void AGV_guide_task(void *p_arg)
 					AGV_INF[i]=USART_RX_BUF[i];
 				}
 			}
-
-			
 			USART_RX_STA=0;
 		}
+
 		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±100ms
 			
 		if(USART_RX_FLAG==1)
@@ -766,12 +879,13 @@ void AGV_guide_task(void *p_arg)
 
 
 //motor_drive»ŒŒÒ∫Ø ˝
+//”–πÏº∞≥¨…˘≤®±‹’œ
 void motor_drive_task(void *p_arg)
 {
 	u16 AGV_feedback;
 	u8 ult_flag=0;//ºÏ≤‚µΩ«∞∑Ω”–’œ∞≠ŒÔ ±£¨øÿ÷∆Ω¯»Î±‹’œ¡˜≥Ã
 	u8 direction_flag=0;//”ˆµΩ’œ∞≠ ±0—°‘ÒÕ˘◊Û£¨1—°‘ÒÕ˘”“
-	
+	u8 process_control=0;
 	OS_ERR err;
 	p_arg = p_arg;
 	
@@ -779,95 +893,292 @@ void motor_drive_task(void *p_arg)
 	{
 		AGV_feedback=AGV_INF[4];
 		AGV_feedback=(AGV_feedback<<8)+AGV_INF[5];
-//		printf("%x",AGV_feedback);
+//		printf("AGV_feedback%x\r\n",AGV_feedback);
 		if(ult_detection==0&&ult_flag==0)
 		{
 			
 			if(((0x0128<AGV_feedback&&AGV_feedback<0x03c8)||(AGV_feedback==0x0108)||(AGV_feedback==0x0060))&&AGV_feedback!=0)
 			{
-				TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
-				TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“	
+				TIM_SetTIM3Compare4(349);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+				TIM_SetTIM3Compare3(349);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“	
 			}
 					
 			if((AGV_feedback<0x0128)&&(AGV_feedback!=0x0108)&&(AGV_feedback!=0x0060)&&AGV_feedback!=0)
 			{					
-				TIM_SetTIM3Compare4(299);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
-				TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“		
+				if(process_control>4)
+				{
+					TIM_SetTIM3Compare4(429);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(349);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					process_control++;	
+					if(process_control>180) process_control=0;
+						
+				}
+				else
+				{
+					TIM_SetTIM3Compare4(249);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(429);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“	
+				}					
 			}
 			
 			if(AGV_feedback>0x03c8)
 			{
+				if(process_control>4)
+				{
+					TIM_SetTIM3Compare4(349);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(429);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					process_control++;	
+					if(process_control>180) process_control=0;
+				}
+				else
+				{
+					TIM_SetTIM3Compare4(429);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(249);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+				}
+			}
+			
+		}
+		if(ult_detection>0) ult_flag=1;//ºÏ≤‚µΩ«∞∑Ω”–’œ∞≠
+			
+		if((ult_flag==1)&&(direction_flag==0))
+		{
+			if(process_control==0)
+			{
 				TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
-				TIM_SetTIM3Compare3(299);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+				TIM_SetTIM3Compare3(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+				process_control=1;
+				OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+		
+				printf("a\r\n");
 			}
-			
-		}
-		if(ult_detection==1) ult_flag=1;//ºÏ≤‚µΩ«∞∑Ω“ª√◊”–’œ∞≠
-			
-		if(ult_flag==1&&direction_flag==0)
-		{
-			TIM_SetTIM3Compare4(449);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
-			TIM_SetTIM3Compare3(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
-			OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
-			if(ult_detection==0)
+//			printf("ult_detection%d\r\n",ult_detection);
+			if((ult_detection==0)&&(direction_flag==0))
 			{
-				TIM_SetTIM3Compare4(449);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
-				TIM_SetTIM3Compare3(449);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
-				OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+				if(process_control==1)
+				{
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					process_control=2;
+					OSTimeDlyHMSM(0,0,5,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					printf("aa\r\n");
+				}
+				if(process_control==2)
+				{
+					TIM_SetTIM3Compare4(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”
+					process_control=3;
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					printf("bb\r\n");
+				}
+				if(process_control==3)
+				{
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					process_control=4;
+					OSTimeDlyHMSM(0,0,6,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+				}
+				if(process_control==4)
+				{
+					
+					TIM_SetTIM3Compare4(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					process_control=5;
+					OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+				}
+				if(process_control==5)
+				{
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					if(AGV_feedback!=0) 
+					{
+//						printf("AGV_feedbackAGV_feedback:\r\n\r\n%x\r\n\r\n",AGV_feedback);
+//						TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+//						TIM_SetTIM3Compare3(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+						ult_flag=0;
+//						process_control=0;
+						OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+						printf("cc\r\n");
+					}
+					printf("b\r\n");
+				}
+				
+			}
+			if(ult_detection>0)
+			{
+				direction_flag=1;
+				if(process_control==1)
+				{
+					Left_BK(0);Right_BK(0);
+					Left_FR(1);Right_FR(0);
+					Left_BK(1);Right_BK(1);
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					Left_BK(0);Right_BK(0);
+					Left_FR(0);Right_FR(1);
+					Left_BK(1);Right_BK(1);
+					process_control=0;
+					printf("c\r\n");
+				}
+				if(process_control==2)
+				{
+					Left_BK(0);Right_BK(0);
+					Left_FR(1);Right_FR(0);
+					Left_BK(1);Right_BK(1);
+					TIM_SetTIM3Compare4(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					Left_BK(0);Right_BK(0);
+					Left_FR(0);Right_FR(1);
+					Left_BK(1);Right_BK(1);
+					process_control=0;
+				}
+			}				
+		}
+		if((ult_flag==1)&&(direction_flag==1))
+		{
+			if(process_control==0)
+			{
 				TIM_SetTIM3Compare4(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
-				TIM_SetTIM3Compare3(449);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”
-				OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
-				
+				TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+				OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+				process_control=1;
+				printf("q\r\n");
 			}
-			if(ult_detection>1)
-			{
-				direction_flag=1;
-				Left_BK(0);Right_BK(0);
-				Left_FR(1);Right_FR(0);
-				Left_BK(1);Right_BK(1);
-				TIM_SetTIM3Compare4(449);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
-				TIM_SetTIM3Compare3(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
-				OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
-				Left_BK(0);Right_BK(0);
-				Left_FR(0);Right_FR(1);
-				Left_BK(1);Right_BK(1);
-			}
-				
-		}
-		if(ult_flag==1&&direction_flag==1)
-		{
-			TIM_SetTIM3Compare4(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
-			TIM_SetTIM3Compare3(449);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
-			OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+//			OSTimeDlyHMSM(0,0,1,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
 			if(ult_detection==0)
 			{
-				TIM_SetTIM3Compare4(449);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
-				TIM_SetTIM3Compare3(449);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
-				OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
-				TIM_SetTIM3Compare4(449);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
-				TIM_SetTIM3Compare3(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+				if(process_control==1)
+				{
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					process_control=2;
+					OSTimeDlyHMSM(0,0,6,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					printf("ww\r\n");
+				}
+				if(process_control==2)
+				{
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					process_control=3;
+					OSTimeDlyHMSM(0,0,3,500,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					printf("ee\r\n");
+				}
+				if(process_control==3)
+				{
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					process_control=4;
+					OSTimeDlyHMSM(0,0,6,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+				}
+				if(process_control==4)
+				{
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					process_control=5;
+					OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+				}
+				if(process_control==5)
+				{
+					
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					if(AGV_feedback!=0)
+					{
+//						printf("AGV_feedbackAGV_feedback:\r\n\r\n%x\r\n\r\n",AGV_feedback);
+//						TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+//						TIM_SetTIM3Compare3(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+						ult_flag=0;
+						direction_flag=0;
+//						process_control=0;
+						printf("ff\r\n");
+						OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					}
+					printf("w\r\n");
+				}
+				
 			}
-			if(ult_detection>1)
+			if(ult_detection>0)
 			{
-				direction_flag=1;
-				Left_BK(0);Right_BK(0);
-				Left_FR(1);Right_FR(0);
-				Left_BK(1);Right_BK(1);
-				TIM_SetTIM3Compare4(449);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
-				TIM_SetTIM3Compare3(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
-				OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
-				Left_BK(0);Right_BK(0);
-				Left_FR(0);Right_FR(1);
-				Left_BK(1);Right_BK(1);
+				direction_flag=0;
+				if(process_control==1)
+				{
+					Left_BK(0);Right_BK(0);
+					Left_FR(1);Right_FR(0);
+					Left_BK(1);Right_BK(1);
+					TIM_SetTIM3Compare4(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					Left_BK(0);Right_BK(0);
+					Left_FR(0);Right_FR(1);
+					Left_BK(1);Right_BK(1);
+					process_control=0;
+					printf("e\r\n");
+				}
+				if(process_control==3)
+				{
+					Left_BK(0);Right_BK(0);
+					Left_FR(1);Right_FR(0);
+					Left_BK(1);Right_BK(1);
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					TIM_SetTIM3Compare4(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					TIM_SetTIM3Compare4(498);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»◊Û
+					TIM_SetTIM3Compare3(399);	//–ﬁ∏ƒ±»Ωœ÷µ£¨–ﬁ∏ƒ’ºø’±»”“
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±2s
+					Left_BK(0);Right_BK(0);
+					Left_FR(0);Right_FR(1);
+					Left_BK(1);Right_BK(1);
+					process_control=0;
+				}
 			}
 		}			
 		
+		printf("%d %d %d\r\n",ult_detection,direction_flag,ult_flag);
 		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±10ms
 		
 	}
 }
 
-
+//lidar»ŒŒÒ∫Ø ˝
+void MUSIC_task(void *p_arg)
+{
+	
+	OS_ERR err;
+	p_arg = p_arg;
+    
+	while(1)
+	{
+//		while(music_play)
+//		{
+//			static u16 i=0;
+//			i++;
+//			if(i==1)
+//			{
+//				W25QXX_Init();				   	//≥ı ºªØW25Q256
+//				W25QXX_Init();				    //≥ı ºªØW25Q256
+//				WM8978_Init();				    //≥ı ºªØWM8978
+//				WM8978_HPvol_Set(40,40);	    //∂˙ª˙“Ù¡ø…Ë÷√
+//				WM8978_SPKvol_Set(30);		    //¿Æ∞»“Ù¡ø…Ë÷√
+//				PCF8574_Init();					//≥ı ºªØPCF8574
+//				
+//			}
+//			audio_play();
+//			
+//			if(i>5) i=2;
+//			OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±200ms
+//		}
+		OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //—” ±200ms
+	}
+}
 
 //…„œÒÕ∑ ˝æ›DMAΩ” ’ÕÍ≥…÷–∂œªÿµ˜∫Ø ˝
 void qr_dcmi_rx_callback(void)

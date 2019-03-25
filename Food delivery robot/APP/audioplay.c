@@ -106,6 +106,7 @@ void audio_msg_show(u32 totsec,u32 cursec,u32 bitrate)
 		LCD_ShowString(60+110+32,210,200,16,16,"Kbps");	 
 	} 		 
 }
+extern u8 music_play;
 //播放音乐
 void audio_play(void)
 {
@@ -123,31 +124,31 @@ void audio_play(void)
 	WM8978_Input_Cfg(0,0,0);//关闭输入通道
 	WM8978_Output_Cfg(1,0);	//开启DAC输出   
 	
- 	while(f_opendir(&wavdir,"0:/MUSIC"))//打开音乐文件夹
- 	{	    
-		Show_Str(60,190,240,16,"MUSIC文件夹错误!",16,0);
-		delay_ms(200);				  
-		LCD_Fill(60,190,240,206,WHITE);//清除显示	     
-		delay_ms(200);				  
-	} 									  
+// 	while(f_opendir(&wavdir,"0:/MUSIC"))//打开音乐文件夹
+// 	{	    
+//		Show_Str(60,190,240,16,"MUSIC文件夹错误!",16,0);
+//		delay_ms(200);				  
+//		LCD_Fill(60,190,240,206,WHITE);//清除显示	     
+//		delay_ms(200);				  
+//	} 									  
 	totwavnum=audio_get_tnum("0:/MUSIC"); //得到总有效文件数
-  	while(totwavnum==NULL)//音乐文件总数为0		
- 	{	    
-		Show_Str(60,190,240,16,"没有音乐文件!",16,0);
-		delay_ms(200);				  
-		LCD_Fill(60,190,240,146,WHITE);//清除显示	     
-		delay_ms(200);				  
-	}										   
+//  	while(totwavnum==NULL)//音乐文件总数为0		
+// 	{	    
+//		Show_Str(60,190,240,16,"没有音乐文件!",16,0);
+//		delay_ms(200);				  
+//		LCD_Fill(60,190,240,146,WHITE);//清除显示	     
+//		delay_ms(200);				  
+//	}										   
 	wavfileinfo=(FILINFO*)mymalloc(SRAMIN,sizeof(FILINFO));	//申请内存
   	pname=mymalloc(SRAMIN,_MAX_LFN*2+1);					//为带路径的文件名分配内存
  	wavoffsettbl=mymalloc(SRAMIN,4*totwavnum);				//申请4*totwavnum个字节的内存,用于存放音乐文件off block索引
- 	while(!wavfileinfo||!pname||!wavoffsettbl)//内存分配出错
- 	{	    
-		Show_Str(60,190,240,16,"内存分配失败!",16,0);
-		delay_ms(200);				  
-		LCD_Fill(60,190,240,146,WHITE);//清除显示	     
-		delay_ms(200);				  
-	} 	 
+// 	while(!wavfileinfo||!pname||!wavoffsettbl)//内存分配出错
+// 	{	    
+//		Show_Str(60,190,240,16,"内存分配失败!",16,0);
+//		delay_ms(200);				  
+//		LCD_Fill(60,190,240,146,WHITE);//清除显示	     
+//		delay_ms(200);				  
+//	} 	 
  	//记录索引
     res=f_opendir(&wavdir,"0:/MUSIC"); //打开目录
 	if(res==FR_OK)
@@ -175,19 +176,11 @@ void audio_play(void)
         if(res!=FR_OK||wavfileinfo->fname[0]==0)break;			//错误了/到末尾了,退出		 
 		strcpy((char*)pname,"0:/MUSIC/");						//复制路径(目录)
 		strcat((char*)pname,(const char*)wavfileinfo->fname);	//将文件名接在后面
- 		LCD_Fill(60,190,lcddev.width-1,190+16,WHITE);	//清除之前的显示
-		Show_Str(60,190,lcddev.width-60,16,(u8*)wavfileinfo->fname,16,0);//显示歌曲名字 
-		audio_index_show(curindex+1,totwavnum);
+// 		LCD_Fill(60,190,lcddev.width-1,190+16,WHITE);	//清除之前的显示
+//		Show_Str(60,190,lcddev.width-60,16,(u8*)wavfileinfo->fname,16,0);//显示歌曲名字 
+//		audio_index_show(curindex+1,totwavnum);
 		key=audio_play_song(pname); 			 		//播放这个音频文件
-		if(key==KEY2_PRES)		//上一曲
-		{
-			if(curindex)curindex--;
-			else curindex=totwavnum-1;
- 		}else if(key==KEY0_PRES)//下一曲
-		{
-			curindex++;		   	
-			if(curindex>=totwavnum)curindex=0;//到末尾的时候,自动从头开始
- 		}else break;	//产生了错误 	 
+//		if(music_play==0) break;	//产生了错误 	 
 	} 											  
 	myfree(SRAMIN,wavfileinfo);			//释放内存			    
 	myfree(SRAMIN,pname);				//释放内存			    

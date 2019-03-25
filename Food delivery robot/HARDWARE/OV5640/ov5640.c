@@ -104,9 +104,9 @@ u8 OV5640_Init(void)
 	   	OV5640_WR_Reg(ov5640_uxga_init_reg_tbl[i][0],ov5640_uxga_init_reg_tbl[i][1]);
  	}   
 	//检查闪光灯是否正常
-	OV5640_Flash_Ctrl(1);//打开闪光灯
-	delay_ms(50);
-	OV5640_Flash_Ctrl(0);//关闭闪光灯
+//	OV5640_Flash_Ctrl(1);//打开闪光灯
+//	delay_ms(50);
+//	OV5640_Flash_Ctrl(0);//关闭闪光灯
   	return 0x00; 	//ok
 } 
 //OV5640切换为JPEG模式
