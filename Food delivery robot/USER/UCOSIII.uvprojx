@@ -365,7 +365,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F767xx,USE_HAL_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\CORE;..\OBJ;..\USER;..\HALLIB\STM32F7xx_HAL_Driver\Inc;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\HARDWARE\LED;..\UCOSIII\uC-LIB;..\UCOSIII\uC-CPU;..\UCOSIII\UCOS-BSP;..\UCOSIII\UCOS-CONFIG;..\UCOSIII\uCOS-III\Source;..\UCOSIII\uC-CPU\ARM-Cortex-M4\RealView;..\UCOSIII\uC-LIB\Ports\ARM-Cortex-M4\RealView;..\UCOSIII\uCOS-III\Ports\ARM-Cortex-M4\Generic\RealView;..\MALLOC;..\FATFS\exfuns;..\FATFS\src;..\ATKQR;..\USER;..\HARDWARE\DCMI;..\HARDWARE\IIC;..\HARDWARE\KEY;..\HARDWARE\LCD;..\HARDWARE\MPU;..\HARDWARE\NAND;..\HARDWARE\OV5640;..\HARDWARE\PCF8574;..\HARDWARE\QSPI;..\HARDWARE\SDMMC;..\HARDWARE\SDRAM;..\HARDWARE\W25QXX;..\FATFS;..\FATFS\src\option;..\TEXT;..\HARDWARE\LIDAR;..\HARDWARE\RFID;..\HARDWARE\24CXX;..\HARDWARE\TOUCH;..\HARDWARE\ULTRASONIC;..\HARDWARE\TIMER;..\USMART;..\HARDWARE\RS485;..\HARDWARE\CRC16_MODBUS;..\HARDWARE\MOTOR_DRIVE;..\USMART;..\APP;..\ATKQR;..\PICTURE;..\AUDIOCODEC;..\AUDIOCODEC\wav;..\HARDWARE\WM8978;..\HARDWARE\SAI;..\FATFS;..\FATFS\doc;..\FATFS\doc\en;..\FATFS\doc\img;..\FATFS\doc\ja;..\FATFS\exfuns;..\FATFS\src;..\FATFS\src\option;..\FATFS\doc</IncludePath>
+              <IncludePath>..\CORE;..\OBJ;..\USER;..\HALLIB\STM32F7xx_HAL_Driver\Inc;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\HARDWARE\LED;..\UCOSIII\uC-LIB;..\UCOSIII\uC-CPU;..\UCOSIII\UCOS-BSP;..\UCOSIII\UCOS-CONFIG;..\UCOSIII\uCOS-III\Source;..\UCOSIII\uC-CPU\ARM-Cortex-M4\RealView;..\UCOSIII\uC-LIB\Ports\ARM-Cortex-M4\RealView;..\UCOSIII\uCOS-III\Ports\ARM-Cortex-M4\Generic\RealView;..\MALLOC;..\FATFS\exfuns;..\FATFS\src;..\ATKQR;..\USER;..\HARDWARE\DCMI;..\HARDWARE\IIC;..\HARDWARE\KEY;..\HARDWARE\LCD;..\HARDWARE\MPU;..\HARDWARE\NAND;..\HARDWARE\OV5640;..\HARDWARE\PCF8574;..\HARDWARE\QSPI;..\HARDWARE\SDMMC;..\HARDWARE\SDRAM;..\HARDWARE\W25QXX;..\FATFS;..\FATFS\src\option;..\TEXT;..\HARDWARE\LIDAR;..\HARDWARE\RFID;..\HARDWARE\24CXX;..\HARDWARE\TOUCH;..\HARDWARE\ULTRASONIC;..\HARDWARE\TIMER;..\USMART;..\HARDWARE\RS485;..\HARDWARE\CRC16_MODBUS;..\HARDWARE\MOTOR_DRIVE;..\USMART;..\APP;..\ATKQR;..\PICTURE;..\AUDIOCODEC;..\AUDIOCODEC\wav;..\HARDWARE\WM8978;..\HARDWARE\SAI;..\FATFS;..\FATFS\doc;..\FATFS\doc\en;..\FATFS\doc\img;..\FATFS\doc\ja;..\FATFS\exfuns;..\FATFS\src;..\FATFS\src\option;..\FATFS\doc;..\ATK_ESP8266</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1142,6 +1142,31 @@
               <FileName>tjpgd.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\PICTURE\tjpgd.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>ATK_ESP8266</GroupName>
+          <Files>
+            <File>
+              <FileName>apsta.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ATK_ESP8266\apsta.c</FilePath>
+            </File>
+            <File>
+              <FileName>common.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ATK_ESP8266\common.c</FilePath>
+            </File>
+            <File>
+              <FileName>wifiap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ATK_ESP8266\wifiap.c</FilePath>
+            </File>
+            <File>
+              <FileName>wifista.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ATK_ESP8266\wifista.c</FilePath>
             </File>
           </Files>
         </Group>

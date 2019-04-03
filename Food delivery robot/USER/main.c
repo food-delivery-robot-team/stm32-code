@@ -30,7 +30,8 @@
 #include "rs485.h"
 #include "wm8978.h"	 
 #include "audioplay.h"
-
+#include "common.h"
+#include "text.h"
 
 
 /************************************************
@@ -65,7 +66,7 @@ void start_task(void *p_arg);
 //任务优先级
 #define interface_TASK_PRIO		4
 //任务堆栈大小	
-#define interface_STK_SIZE 		1024
+#define interface_STK_SIZE 		256
 //任务控制块
 OS_TCB interfaceTaskTCB;
 //任务堆栈	
@@ -147,6 +148,39 @@ CPU_STK MUSIC_TASK_STK[MUSIC_STK_SIZE];
 void MUSIC_task(void *p_arg);
 
 //任务优先级
+#define SELECT_TABLE_TASK_PRIO		5
+//任务堆栈大小	
+#define SELECT_TABLE_STK_SIZE       256
+//任务控制块
+OS_TCB SELECT_TABLETaskTCB;
+//任务堆栈	
+CPU_STK SELECT_TABLE_TASK_STK[SELECT_TABLE_STK_SIZE];
+//任务函数
+void SELECT_TABLE_task(void *p_arg);
+
+//任务优先级
+#define LETS_RUN_TASK_PRIO		5
+//任务堆栈大小	
+#define LETS_RUN_STK_SIZE       256
+//任务控制块
+OS_TCB LETS_RUNTaskTCB;
+//任务堆栈	
+CPU_STK LETS_RUN_TASK_STK[LETS_RUN_STK_SIZE];
+//任务函数
+void LETS_RUN_task(void *p_arg);
+
+//任务优先级
+#define WIFI_TASK_PRIO		4
+//任务堆栈大小	
+#define WIFI_STK_SIZE       256
+//任务控制块
+OS_TCB WIFITaskTCB;
+//任务堆栈	
+CPU_STK WIFI_TASK_STK[WIFI_STK_SIZE];
+//任务函数
+void WIFI_task(void *p_arg);
+
+//任务优先级
 #define runing_TASK_PRIO		4
 //任务堆栈大小
 #define runing_STK_SIZE		256
@@ -166,6 +200,19 @@ void runing_task(void *p_arg);
 //void tmr2_callback(void *p_tmr, void *p_arg);	//定时器2回调函数
 
 
+u8 Rx_485_BUF[15];
+u8 Rx_485_STA;
+
+u8 RFID_485_STA;
+u8 RFID_RESULT;
+
+u8 QR_CODE_RESULT;
+
+u8 SELECT_TABLE_RESULT;
+u8 LETS_RUN_FLAG;//是否有送餐任务
+
+u8 USART_RX_FLAG;
+u16 USART_RX_STORAGE;
 
 u16 qr_image_width;						//输入识别图像的宽度（长度=宽度）
 u8 	readok=0;									//采集完一帧数据标识
@@ -187,7 +234,7 @@ int main(void)
     OS_ERR err;
 	CPU_SR_ALLOC();
     
-//	float fac;
+	float fac;
 	
     Write_Through();                //透写
     Cache_Enable();                 //打开L1-Cache
@@ -195,12 +242,13 @@ int main(void)
     Stm32_Clock_Init(432,25,2,9);   //设置时钟,216Mhz 
     delay_init(216);                //延时初始化
 	uart_init(115200);		        //串口初始化
+	usart3_init(115200);  						//初始化串口3波特率为115200
 	usmart_dev.init(108); 		    //初始化USMART	
     LED_Init();                     //初始化LED
 	KEY_Init();                     //初始化按键
 	SDRAM_Init();                   //初始化SDRAM
 	LCD_Init();                     //初始化LCD
-	RS485_Init(9600);		        //初始化RS485
+	
 	ultrasonic_init();              //初始化超声波传感器
 	motor_drive_Init();
 	
@@ -209,8 +257,9 @@ int main(void)
 //    WM8978_Init();				    //初始化WM8978
 //	WM8978_HPvol_Set(40,40);	    //耳机音量设置
 //	WM8978_SPKvol_Set(30);		    //喇叭音量设置
-//	PCF8574_Init();					//初始化PCF8574
-//	OV5640_Init();					//初始化OV5640
+	PCF8574_Init();					//初始化PCF8574
+	OV5640_Init();					//初始化OV5640
+	RS485_Init(9600);		        //初始化RS485
 	tp_dev.init();				    //初始化触摸屏
 	my_mem_init(SRAMIN);            //初始化内部内存池
 	my_mem_init(SRAMEX);            //初始化外部SDRAM内存池
@@ -237,53 +286,65 @@ int main(void)
 		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms				  
 	}  	 
 
-//	while(OV5640_Init())//初始化OV5640
-//	{
-//		Show_Str(30,190,240,16,(u8*)"OV5640 错误!",16,0);
-//		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
-//	    LCD_Fill(30,190,239,206,WHITE);
-//		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
-//	}	
+	while(OV5640_Init())//初始化OV5640
+	{
+		Show_Str(30,190,240,16,(u8*)"OV5640 错误!",16,0);
+		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+	    LCD_Fill(30,190,239,206,WHITE);
+		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+	}	
 	//自动对焦初始化
-//	OV5640_RGB565_Mode();		//RGB565模式 
-//	OV5640_Focus_Init(); 
-//	OV5640_Light_Mode(0);		//自动模式
-//	OV5640_Color_Saturation(3);	//色彩饱和度0
-//	OV5640_Brightness(4);		//亮度0
-//	OV5640_Contrast(3);			//对比度0
-//	OV5640_Sharpness(33);		//自动锐度
-//	OV5640_Focus_Constant();//启动持续对焦
-//	DCMI_Init();						//DCMI配置 
+	OV5640_RGB565_Mode();		//RGB565模式 
+	OV5640_Focus_Init(); 
+	OV5640_Light_Mode(0);		//自动模式
+	OV5640_Color_Saturation(3);	//色彩饱和度0
+	OV5640_Brightness(4);		//亮度0
+	OV5640_Contrast(3);			//对比度0
+	OV5640_Sharpness(33);		//自动锐度
+	OV5640_Focus_Constant();//启动持续对焦
+	DCMI_Init();						//DCMI配置 
 
-//	
-//	
-//		
-//	qr_image_width=lcddev.width;
-//	if(qr_image_width>480)qr_image_width=480;//这里qr_image_width设置为240的倍数
-//	if(qr_image_width==320)qr_image_width=240;
-//	Show_Str(0,(lcddev.height+qr_image_width)/2+4,240,16,(u8*)"识别结果：",16,1);
-//	
-//	dcmi_line_buf[0]=mymalloc(SRAMIN,qr_image_width*2);						//为行缓存接收申请内存	
-//	dcmi_line_buf[1]=mymalloc(SRAMIN,qr_image_width*2);						//为行缓存接收申请内存
-//	rgb_data_buf=mymalloc(SRAMEX,qr_image_width*qr_image_width*2);//为rgb帧缓存申请内存
-//	
-//	dcmi_rx_callback=qr_dcmi_rx_callback;//DMA数据接收中断回调函数
-//	DCMI_DMA_Init((u32)dcmi_line_buf[0],(u32)dcmi_line_buf[1],qr_image_width/2,DMA_MDATAALIGN_HALFWORD,DMA_MINC_ENABLE);//DCMI DMA配置  
-//	fac=800/qr_image_width;	//得到比例因子
-//	OV5640_OutSize_Set((1280-fac*qr_image_width)/2,(800-fac*qr_image_width)/2,qr_image_width,qr_image_width); 
-//	DCMI_Start(); 					//启动传输	 
-//		
-//	printf("SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
-//	printf("SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
-//	printf("SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM)); 
-//	
-//	atk_qr_init();//初始化识别库，为算法申请内存
-//	
-//	printf("1SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
-//	printf("1SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
-//	printf("1SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM));
 	
 	
+		
+	qr_image_width=lcddev.width;
+	if(qr_image_width>480)qr_image_width=480;//这里qr_image_width设置为240的倍数
+	if(qr_image_width==320)qr_image_width=240;
+	Show_Str(0,(lcddev.height+qr_image_width)/2+4,240,16,(u8*)"识别结果：",16,1);
+	
+	dcmi_line_buf[0]=mymalloc(SRAMIN,qr_image_width*2);						//为行缓存接收申请内存	
+	dcmi_line_buf[1]=mymalloc(SRAMIN,qr_image_width*2);						//为行缓存接收申请内存
+	rgb_data_buf=mymalloc(SRAMEX,qr_image_width*qr_image_width*2);//为rgb帧缓存申请内存
+	
+	dcmi_rx_callback=qr_dcmi_rx_callback;//DMA数据接收中断回调函数
+	DCMI_DMA_Init((u32)dcmi_line_buf[0],(u32)dcmi_line_buf[1],qr_image_width/2,DMA_MDATAALIGN_HALFWORD,DMA_MINC_ENABLE);//DCMI DMA配置  
+	fac=800/qr_image_width;	//得到比例因子
+	OV5640_OutSize_Set((1280-fac*qr_image_width)/2,(800-fac*qr_image_width)/2,qr_image_width,qr_image_width); 
+	DCMI_Start(); 					//启动传输	 
+		
+	printf("SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
+	printf("SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
+	printf("SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM)); 
+	
+	atk_qr_init();//初始化识别库，为算法申请内存
+	
+	printf("1SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
+	printf("1SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
+	printf("1SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM));
+	
+	POINT_COLOR=RED;
+	Show_Str_Mid(0,30,"ATK-ESP8266 WIFI模块测试",16,240); 
+	while(atk_8266_send_cmd("AT","OK",20))//检查WIFI模块是否在线
+	{
+		atk_8266_quit_trans();//退出透传
+		atk_8266_send_cmd("AT+CIPMODE=0","OK",200);  //关闭透传模式	
+//		Show_Str(40,55,200,16,"未检测到模块!!!",16,0);
+		OSTimeDlyHMSM(0,0,0,800,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+//		LCD_Fill(40,55,200,55+16,WHITE);
+//		Show_Str(40,55,200,16,"尝试连接模块...",16,0); 
+	} 
+	while(atk_8266_send_cmd("ATE0","OK",20));//关闭回显
+	atk_8266_msg_show(32,155,0);
 
 	OSInit(&err);		            //初始化UCOSIII
 	OS_CRITICAL_ENTER();            //进入临界区
@@ -430,6 +491,48 @@ void start_task(void *p_arg)
                  (void   	* )0,				
                  (OS_OPT      )OS_OPT_TASK_STK_CHK|OS_OPT_TASK_STK_CLR|OS_OPT_TASK_SAVE_FP, 
                  (OS_ERR 	* )&err);
+//创建RFID任务
+	OSTaskCreate((OS_TCB 	* )&SELECT_TABLETaskTCB,		
+				 (CPU_CHAR	* )"SELECT_TABLE task", 		
+                 (OS_TASK_PTR )SELECT_TABLE_task, 			
+                 (void		* )0,					
+                 (OS_PRIO	  )SELECT_TABLE_TASK_PRIO,     	
+                 (CPU_STK   * )&SELECT_TABLE_TASK_STK[0],	
+                 (CPU_STK_SIZE)SELECT_TABLE_STK_SIZE/10,	
+                 (CPU_STK_SIZE)SELECT_TABLE_STK_SIZE,		
+                 (OS_MSG_QTY  )0,					
+                 (OS_TICK	  )0,					
+                 (void   	* )0,				
+                 (OS_OPT      )OS_OPT_TASK_STK_CHK|OS_OPT_TASK_STK_CLR|OS_OPT_TASK_SAVE_FP, 
+                 (OS_ERR 	* )&err);
+//创建lidar任务
+	OSTaskCreate((OS_TCB 	* )&LETS_RUNTaskTCB,		
+				 (CPU_CHAR	* )"LETS_RUN task", 		
+                 (OS_TASK_PTR )LETS_RUN_task, 			
+                 (void		* )0,					
+                 (OS_PRIO	  )LETS_RUN_TASK_PRIO,     	
+                 (CPU_STK   * )&LETS_RUN_TASK_STK[0],	
+                 (CPU_STK_SIZE)LETS_RUN_STK_SIZE/10,	
+                 (CPU_STK_SIZE)LETS_RUN_STK_SIZE,		
+                 (OS_MSG_QTY  )0,					
+                 (OS_TICK	  )0,					
+                 (void   	* )0,				
+                 (OS_OPT      )OS_OPT_TASK_STK_CHK|OS_OPT_TASK_STK_CLR|OS_OPT_TASK_SAVE_FP, 
+                 (OS_ERR 	* )&err);
+//创建lidar任务
+	OSTaskCreate((OS_TCB 	* )&WIFITaskTCB,		
+				 (CPU_CHAR	* )"WIFI task", 		
+                 (OS_TASK_PTR )WIFI_task, 			
+                 (void		* )0,					
+                 (OS_PRIO	  )WIFI_TASK_PRIO,     	
+                 (CPU_STK   * )&WIFI_TASK_STK[0],	
+                 (CPU_STK_SIZE)WIFI_STK_SIZE/10,	
+                 (CPU_STK_SIZE)WIFI_STK_SIZE,		
+                 (OS_MSG_QTY  )0,					
+                 (OS_TICK	  )0,					
+                 (void   	* )0,				
+                 (OS_OPT      )OS_OPT_TASK_STK_CHK|OS_OPT_TASK_STK_CLR|OS_OPT_TASK_SAVE_FP, 
+                 (OS_ERR 	* )&err);
 //创建ultrasonic任务
 	OSTaskCreate((OS_TCB 	* )&ultrasonicTaskTCB,		
 				 (CPU_CHAR	* )"ultrasonic task", 		
@@ -489,7 +592,8 @@ void runing_task(void *p_arg)
 	p_arg = p_arg;
 	
 	OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
-	OSTaskSuspend((OS_TCB*)&RFIDTaskTCB,&err);
+	OSTaskSuspend((OS_TCB*)&SELECT_TABLETaskTCB,&err);
+	OSTaskSuspend((OS_TCB*)&LETS_RUNTaskTCB,&err);
 	
 	seconfary_menu=0;
 	while(1)
@@ -510,7 +614,7 @@ void runing_task(void *p_arg)
 				else if(tp_dev.x[0]>20&&tp_dev.y[0]>100&&tp_dev.x[0]<160&&tp_dev.y[0]<180&&seconfary_menu==0)
 				{
 					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
-					OSTaskResume((OS_TCB*)&RFIDTaskTCB,&err);	
+					OSTaskResume((OS_TCB*)&SELECT_TABLETaskTCB,&err);	
 				}
 				else if(tp_dev.x[0]>20&&tp_dev.y[0]>200&&tp_dev.x[0]<160&&tp_dev.y[0]<280&&seconfary_menu==0)
 				{
@@ -520,13 +624,27 @@ void runing_task(void *p_arg)
 				else if(tp_dev.x[0]>180&&tp_dev.y[0]>20&&tp_dev.x[0]<280&&tp_dev.y[0]<80)
 				{
 					OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
-					OSTaskSuspend((OS_TCB*)&RFIDTaskTCB,&err);
+					OSTaskSuspend((OS_TCB*)&SELECT_TABLETaskTCB,&err);
 					OSTaskSuspend((OS_TCB*)&lidarTaskTCB,&err);
 //					printf("suspend\r\n");
 //					LCD_Clear(WHITE);
 					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
 					seconfary_menu=0;
 				}
+				else if(((tp_dev.x[0]>20&&tp_dev.y[0]>170&&tp_dev.x[0]<120&&tp_dev.y[0]<230&&seconfary_menu==1)||
+						(tp_dev.x[0]>20&&tp_dev.y[0]>290&&tp_dev.x[0]<120&&tp_dev.y[0]<350&&seconfary_menu==1)||
+						(tp_dev.x[0]>160&&tp_dev.y[0]>120&&tp_dev.x[0]<260&&tp_dev.y[0]<280&&seconfary_menu==1)||
+						(tp_dev.x[0]>160&&tp_dev.y[0]>240&&tp_dev.x[0]<260&&tp_dev.y[0]<300&&seconfary_menu==1)||
+						(tp_dev.x[0]>160&&tp_dev.y[0]>360&&tp_dev.x[0]<260&&tp_dev.y[0]<420&&seconfary_menu==1))&&seconfary_menu==1)
+						{
+							OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
+							OSTaskSuspend((OS_TCB*)&SELECT_TABLETaskTCB,&err);
+							OSTaskSuspend((OS_TCB*)&lidarTaskTCB,&err);
+		//					printf("suspend\r\n");
+		//					LCD_Clear(WHITE);
+							OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
+							seconfary_menu=0;
+						}
 				else OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//没有按键按下的时候 			   
 			}
 			
@@ -543,14 +661,28 @@ void interface_task(void *p_arg)
 	while(1)
 	{	
 		if(tp_dev.x[0]>20&&tp_dev.y[0]>20&&tp_dev.x[0]<160&&tp_dev.y[0]<80||
-		   tp_dev.x[0]>20&&tp_dev.y[0]>100&&tp_dev.x[0]<160&&tp_dev.y[0]<180||
-		   tp_dev.x[0]>20&&tp_dev.y[0]<280&&tp_dev.x[0]<160&&tp_dev.y[0]>200
-		)
+		   tp_dev.x[0]>20&&tp_dev.y[0]<280&&tp_dev.x[0]<160&&tp_dev.y[0]>200)
 		{
 			LCD_Clear(WHITE);//清屏 
 			LCD_DrawRectangle(180, 20, 280, 80);
 			LCD_ShowString(195,30,200,16,32,(u8*)"EXIT");		
 			
+		}
+		if(tp_dev.x[0]>20&&tp_dev.y[0]>100&&tp_dev.x[0]<160&&tp_dev.y[0]<180)
+		{
+			LCD_Clear(WHITE);//清屏 
+			LCD_DrawRectangle(180, 20, 260, 80);
+			LCD_ShowString(195,30,200,16,32,(u8*)"EXIT");
+			LCD_DrawRectangle(20, 170, 120, 230);
+			LCD_ShowString(70,180,200,16,32,(u8*)"1");
+			LCD_DrawRectangle(20, 290, 120, 350);
+			LCD_ShowString(70,300,200,16,32,(u8*)"2");
+			LCD_DrawRectangle(160, 120, 260, 180);
+			LCD_ShowString(210,130,200,16,32,(u8*)"3");
+			LCD_DrawRectangle(160, 240, 260, 300);
+			LCD_ShowString(210,250,200,16,32,(u8*)"4");
+			LCD_DrawRectangle(160, 360, 260, 420);
+			LCD_ShowString(210,370,200,16,32,(u8*)"5");
 		}
 		else
 		{
@@ -558,9 +690,16 @@ void interface_task(void *p_arg)
 			LCD_DrawRectangle(20, 20, 160, 80);
 			LCD_ShowString(30,35,200,16,32,(u8*)"QR CODE");
 			LCD_DrawRectangle(20, 100, 160, 180);
-			LCD_ShowString(30,125,200,16,32,(u8*)"RFID");
+			LCD_ShowString(30,125,200,16,32,(u8*)"SELECT");
 			LCD_DrawRectangle(20, 200, 160, 280);
 			LCD_ShowString(30,220,200,16,32,(u8*)"LIDAR");
+			
+			LCD_ShowString(30,290,200,16,32,(u8*)"WIFI:");
+			LCD_ShowString(30,330,200,16,32,(u8*)"RX:");
+			LCD_ShowString(30,420,200,16,32,(u8*)"TASK:");
+			if(SELECT_TABLE_RESULT==0) LCD_ShowString(120,420,200,16,32,(u8*)"NONE");
+			else LCD_ShowNum(120,400,SELECT_TABLE_RESULT,1,32);
+			printf("SELECT_TABLE_RESULT %d",SELECT_TABLE_RESULT);
 		}
 		OSTaskSuspend((OS_TCB*)&interfaceTaskTCB,&err);
 	}
@@ -571,40 +710,13 @@ void interface_task(void *p_arg)
 //ov56400任务函数
 void ov5640_task(void *p_arg)
 {
-	float fac;
+//	float fac;
 	u8 i;
 	
 	OS_ERR err;
 	p_arg = p_arg;
 	
 
-//		while(1)
-//		{
-//			key=KEY_Scan(0);//不支持连按
-//			if(key)
-//			{ 
-//				OV5640_Focus_Single();  //按KEY0、KEY1、KEYUP手动单次自动对焦
-//				
-//				if(key==KEY2_PRES)break;//按KEY2结束识别
-//			} 
-//			if(readok==1)			//采集到了一帧图像
-//			{		
-//				readok=0;
-//				qr_show_image((lcddev.width-qr_image_width)/2,(lcddev.height-qr_image_width)/2,qr_image_width,qr_image_width,rgb_data_buf);
-//				qr_decode(qr_image_width,rgb_data_buf);
-//			}
-//			i++;
-//			if(i==20)//DS0闪烁.
-//			{
-//				i=0;
-//				LED0_Toggle;
-//			}
-////			OSTimeDlyHMSM(0,0,0,20,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
-//		}
-//		atk_qr_destroy();//释放算法内存
-//		printf("3SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
-//		printf("3SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
-//		printf("3SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM)); 
 		while(1)
 		{
 			if(tp_dev.sta&TP_PRES_DOWN)			//触摸屏被按下
@@ -616,50 +728,50 @@ void ov5640_task(void *p_arg)
 			OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
 			if(i>0) 
 			{
-				OV5640_Init();					//初始化OV5640
-				
-				while(OV5640_Init())//初始化OV5640
-				{
-					Show_Str(30,190,240,16,(u8*)"OV5640 错误!",16,0);
-					OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
-					LCD_Fill(30,190,239,206,WHITE);
-					OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
-				}	
-				//自动对焦初始化
-				OV5640_RGB565_Mode();		//RGB565模式 
-				OV5640_Focus_Init(); 
-				OV5640_Light_Mode(0);		//自动模式
-				OV5640_Color_Saturation(3);	//色彩饱和度0
-				OV5640_Brightness(4);		//亮度0
-				OV5640_Contrast(3);			//对比度0
-				OV5640_Sharpness(33);		//自动锐度
-				OV5640_Focus_Constant();//启动持续对焦
-				DCMI_Init();						//DCMI配置 
-				
-				qr_image_width=lcddev.width;
-				if(qr_image_width>480)qr_image_width=480;//这里qr_image_width设置为240的倍数
-				if(qr_image_width==320)qr_image_width=240;
-				Show_Str(0,(lcddev.height+qr_image_width)/2+4,240,16,(u8*)"识别结果：",16,1);
-				
-				dcmi_line_buf[0]=mymalloc(SRAMIN,qr_image_width*2);						//为行缓存接收申请内存	
-				dcmi_line_buf[1]=mymalloc(SRAMIN,qr_image_width*2);						//为行缓存接收申请内存
-				rgb_data_buf=mymalloc(SRAMEX,qr_image_width*qr_image_width*2);//为rgb帧缓存申请内存
-				
-				dcmi_rx_callback=qr_dcmi_rx_callback;//DMA数据接收中断回调函数
-				DCMI_DMA_Init((u32)dcmi_line_buf[0],(u32)dcmi_line_buf[1],qr_image_width/2,DMA_MDATAALIGN_HALFWORD,DMA_MINC_ENABLE);//DCMI DMA配置  
-				fac=800/qr_image_width;	//得到比例因子
-				OV5640_OutSize_Set((1280-fac*qr_image_width)/2,(800-fac*qr_image_width)/2,qr_image_width,qr_image_width); 
-				DCMI_Start(); 					//启动传输	 
-					
-				printf("SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
-				printf("SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
-				printf("SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM)); 
-				
-				atk_qr_init();//初始化识别库，为算法申请内存
-				
-				printf("1SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
-				printf("1SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
-				printf("1SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM));
+//				OV5640_Init();					//初始化OV5640
+//				
+//				while(OV5640_Init())//初始化OV5640
+//				{
+//					Show_Str(30,190,240,16,(u8*)"OV5640 错误!",16,0);
+//					OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+//					LCD_Fill(30,190,239,206,WHITE);
+//					OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+//				}	
+//				//自动对焦初始化
+//				OV5640_RGB565_Mode();		//RGB565模式 
+//				OV5640_Focus_Init(); 
+//				OV5640_Light_Mode(0);		//自动模式
+//				OV5640_Color_Saturation(3);	//色彩饱和度0
+//				OV5640_Brightness(4);		//亮度0
+//				OV5640_Contrast(3);			//对比度0
+//				OV5640_Sharpness(33);		//自动锐度
+//				OV5640_Focus_Constant();//启动持续对焦
+//				DCMI_Init();						//DCMI配置 
+//				
+//				qr_image_width=lcddev.width;
+//				if(qr_image_width>480)qr_image_width=480;//这里qr_image_width设置为240的倍数
+//				if(qr_image_width==320)qr_image_width=240;
+//				Show_Str(0,(lcddev.height+qr_image_width)/2+4,240,16,(u8*)"识别结果：",16,1);
+//				
+//				dcmi_line_buf[0]=mymalloc(SRAMIN,qr_image_width*2);						//为行缓存接收申请内存	
+//				dcmi_line_buf[1]=mymalloc(SRAMIN,qr_image_width*2);						//为行缓存接收申请内存
+//				rgb_data_buf=mymalloc(SRAMEX,qr_image_width*qr_image_width*2);//为rgb帧缓存申请内存
+//				
+//				dcmi_rx_callback=qr_dcmi_rx_callback;//DMA数据接收中断回调函数
+//				DCMI_DMA_Init((u32)dcmi_line_buf[0],(u32)dcmi_line_buf[1],qr_image_width/2,DMA_MDATAALIGN_HALFWORD,DMA_MINC_ENABLE);//DCMI DMA配置  
+//				fac=800/qr_image_width;	//得到比例因子
+//				OV5640_OutSize_Set((1280-fac*qr_image_width)/2,(800-fac*qr_image_width)/2,qr_image_width,qr_image_width); 
+//				DCMI_Start(); 					//启动传输	 
+//					
+//				printf("SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
+//				printf("SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
+//				printf("SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM)); 
+//				
+//				atk_qr_init();//初始化识别库，为算法申请内存
+//				
+//				printf("1SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
+//				printf("1SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
+//				printf("1SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM));
 				i=0;
 			}
 			if(readok==1)			//采集到了一帧图像
@@ -673,15 +785,58 @@ void ov5640_task(void *p_arg)
 
 }
 
-u8 RFID_485_BUF[15];
 
 //lidar任务函数
 void RFID_task(void *p_arg)
 {
 	u8 len,i;
 	long num;
-	u8 receive[50];
-	u8 RFID_485_STA;
+	u8 receive[15];
+
+	OS_ERR err;
+	p_arg = p_arg;
+	
+	while(1)
+	{
+		
+//		LCD_ShowString(20,160,200,16,32,(u8*)"result:");
+//		RS485_Receive_Data(Rx_485_BUF,&Rx_485_STA);
+		if(RFID_485_STA)
+		{
+			if(Rx_485_BUF[0]==0x02)
+			{
+				if((Rx_485_BUF[11]==0x0d)&&(Rx_485_BUF[12]==0x0a)&&(Rx_485_BUF[13]==0x03))
+				{
+					for(i=0;i<14;i++)
+					{
+						receive[i]=Rx_485_BUF[i];
+						printf("%x\r\n",Rx_485_BUF[i]);
+					}			
+				}
+				if((receive[1]==0x31)&&(receive[6]==0x33)&&(receive[10]==0x34)) RFID_RESULT=1;
+				else RFID_RESULT=0;
+				if((receive[1]==0x31)&&(receive[6]==0x34)&&(receive[10]==0x38)) RFID_RESULT=2;
+				if((receive[1]==0x31)&&(receive[6]==0x33)&&(receive[10]==0x36)) RFID_RESULT=3;
+				if((receive[1]==0x31)&&(receive[6]==0x35)&&(receive[10]==0x36)) RFID_RESULT=4;
+				if((receive[1]==0x33)&&(receive[6]==0x38)&&(receive[10]==0x39)) RFID_RESULT=5;
+				if((receive[1]==0x33)&&(receive[6]==0x39)&&(receive[10]==0x39)) RFID_RESULT=6;
+				if((receive[1]==0x33)&&(receive[6]==0x33)&&(receive[10]==0x31)) RFID_RESULT=7;
+				if((receive[1]==0x33)&&(receive[6]==0x32)&&(receive[10]==0x33)) RFID_RESULT=8;
+				if((receive[1]==0x33)&&(receive[6]==0x34)&&(receive[10]==0x39)) RFID_RESULT=9;
+				if((receive[1]==0x33)&&(receive[6]==0x38)&&(receive[10]==0x37)) RFID_RESULT=10;
+				
+				printf("RFID_RESULT %d\r\n",RFID_RESULT);
+			}
+			RFID_485_STA=0;
+		}
+		OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+	}
+}
+
+
+//lidar任务函数
+void SELECT_TABLE_task(void *p_arg)
+{
 	OS_ERR err;
 	p_arg = p_arg;
 	
@@ -690,27 +845,36 @@ void RFID_task(void *p_arg)
 		if(tp_dev.sta&TP_PRES_DOWN)			//触摸屏被按下
 		{
 			seconfary_menu=1;
+		}
+		if(tp_dev.x[0]>20&&tp_dev.y[0]>170&&tp_dev.x[0]<120&&tp_dev.y[0]<230&&seconfary_menu==1)  SELECT_TABLE_RESULT=1;
+		if(tp_dev.x[0]>20&&tp_dev.y[0]>290&&tp_dev.x[0]<120&&tp_dev.y[0]<350&&seconfary_menu==1)  SELECT_TABLE_RESULT=2;
+		if(tp_dev.x[0]>160&&tp_dev.y[0]>120&&tp_dev.x[0]<260&&tp_dev.y[0]<280&&seconfary_menu==1) SELECT_TABLE_RESULT=3;
+		if(tp_dev.x[0]>160&&tp_dev.y[0]>240&&tp_dev.x[0]<260&&tp_dev.y[0]<300&&seconfary_menu==1) SELECT_TABLE_RESULT=4;
+		if(tp_dev.x[0]>160&&tp_dev.y[0]>360&&tp_dev.x[0]<260&&tp_dev.y[0]<420&&seconfary_menu==1) SELECT_TABLE_RESULT=5;
 			
-		}
-		LCD_ShowString(20,160,200,16,32,(u8*)"result:");
-		RS485_Receive_Data(RFID_485_BUF,&RFID_485_STA);
-		if(RFID_485_STA)
-		{
-			len=RFID_485_STA&0x3fff;//得到此次接收到的数据长度
-			for(i=0;i<len;i++)
-			{
-//				num=USART_RX_BUF[i]*pow(10,(len-i));
-				receive[i]=RFID_485_BUF[i];
-				printf("%x",RFID_485_BUF[i]);
-				LCD_ShowChar(20+i*20,200,receive[i],24,0);
-			}
-
-//			USART_RX_STA=0;
-		}
-		OSTimeDlyHMSM(0,0,0,8,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+//		printf("SELECT_TABLE_RESULT:%d\r\n",SELECT_TABLE_RESULT);
+		OSTaskResume((OS_TCB*)&LETS_RUNTaskTCB,&err);	
+		
+		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
 	}
 }
-
+void LETS_RUN_task(void *p_arg)
+{
+	OS_ERR err;
+	p_arg = p_arg;
+	
+	while(1)
+	{
+		printf("RFID_RESULT %d SELECT_TABLE_RESULT %d\r\n",RFID_RESULT,SELECT_TABLE_RESULT);
+		if((RFID_RESULT==SELECT_TABLE_RESULT)&&(SELECT_TABLE_RESULT>0))
+		{
+			LETS_RUN_FLAG=1;
+		}
+//		printf("LETS_RUN_FLAG %d",LETS_RUN_FLAG);
+		
+		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+	}
+}
 
 //lidar任务函数
 void lidar_task(void *p_arg)
@@ -733,6 +897,98 @@ void lidar_task(void *p_arg)
 	}
 }
 
+extern u8 wifi_flag;
+	
+//lidar任务函数
+void WIFI_task(void *p_arg)
+{
+	u8 i,key;
+	u16 rlen;
+	
+	u8 netpro=0;	//网络模式
+	u8 timex=0; 
+	u8 ipbuf[16]; 	//IP缓存
+	u8 *p;
+	u16 t=999;		//加速第一次获取链接状态
+	u8 res=0;
+	u8 constate=0;	//连接状态
+	
+	OS_ERR err;
+	p_arg = p_arg;
+	
+	p=mymalloc(SRAMIN,32);							//申请32字节内存
+	USART3_RX_STA=0;
+	while(1)
+	{
+		
+		
+		if(wifi_flag)
+		{
+			atk_8266_wifiap_test();	//WIFI AP测试
+
+			while(1)
+			{
+				t++;
+				OSTimeDlyHMSM(0,0,0,5,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+		  
+				if(USART3_RX_STA&0X8000)		//接收到一次数据了
+				{ 
+					rlen=USART3_RX_STA&0X7FFF;	//得到本次接收到的数据长度
+					USART3_RX_BUF[rlen]=0;		//添加结束符 
+					for(i=0;i<rlen;i++)
+					{
+						printf("USART3_RX_BUF:%d\r\n",USART3_RX_BUF[i]);	//发送到串口   
+					}
+					printf("\r\n");	//发送到串口 
+					Show_Str(80,340,180,190,USART3_RX_BUF,12,0);//显示接收到的数据  
+					if(USART3_RX_BUF[11]==48&&USART3_RX_BUF[12]==49) 
+					{
+						SELECT_TABLE_RESULT=1;
+						OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);	
+						OSTaskResume((OS_TCB*)&LETS_RUNTaskTCB,&err);	
+					}
+					if(USART3_RX_BUF[11]==48&&USART3_RX_BUF[12]==50) 
+					{
+						SELECT_TABLE_RESULT=2;
+						OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);	
+						OSTaskResume((OS_TCB*)&LETS_RUNTaskTCB,&err);	
+					}
+					if(USART3_RX_BUF[11]==48&&USART3_RX_BUF[12]==51) 
+					{
+						SELECT_TABLE_RESULT=3;
+						OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);	
+						OSTaskResume((OS_TCB*)&LETS_RUNTaskTCB,&err);	
+					}
+					if(USART3_RX_BUF[11]==0x0a&&USART3_RX_BUF[12]==0x0b) 
+					{
+						SELECT_TABLE_RESULT=10;
+						OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);	
+						OSTaskResume((OS_TCB*)&LETS_RUNTaskTCB,&err);	
+					}
+					printf("SELECT_TABLE_RESULT %d\r\n",SELECT_TABLE_RESULT);
+					USART3_RX_STA=0;
+
+				}
+		
+				if(t==1000)//连续10秒钟没有收到任何数据,检查连接是不是还存在.
+				{
+					constate=atk_8266_consta_check();//得到连接状态
+					if(constate=='+')Show_Str(120,300,200,12,"连接成功",12,0);  //连接状态
+					else Show_Str(120,300,200,24,"连接失败",12,0); 	  	 
+					t=0;
+				}
+
+				atk_8266_at_response(1);
+				
+			}
+			atk_8266_msg_show(32,155,0);
+			OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
+			
+			wifi_flag=0;
+		}
+	OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+	}
+}
 
 extern u8  TIM5CH1_CAPTURE_STA;		//输入捕获状态		    				
 extern u32	TIM5CH1_CAPTURE_VAL;	//输入捕获值 
@@ -763,7 +1019,7 @@ void ultrasonic_task(void *p_arg)
 				ult_times0++;
 				ult_times1=0;
 				ult_times2=0;
-				if(ult_times0>2)
+				if(ult_times0>3)
 				{
 					ult_detection=0;
 					ult_times0=0;
@@ -783,29 +1039,33 @@ void ultrasonic_task(void *p_arg)
 				ult_times1++;
 				ult_times0=0;
 				ult_times2=0;
-				if(ult_times1>2)
+				if(ult_times1>3)
 				{
-					music_play=1;
+//					music_play=1;
 					ult_detection=1;
 					ult_times1=0;
 				}
 			}
-			if(temp<20&&temp>5) 
+			if(temp<20&&temp>0) 
 			{
 				ult_times2++;
 				ult_times1=0;
 				ult_times0=0;
-				if(ult_times2>2)
+				if(ult_times2>3&&LETS_RUN_FLAG==0)
 				{
-					music_play=0;
+//					music_play=0;
+//					printf("boom\r\n");
 					ult_detection=2;
 					Left_BK(0);Right_BK(0);
 					Left_FR(1);Right_FR(0);
 					Left_BK(1);Right_BK(1);
-					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时100ms
+					TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
+					TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右	
+					OSTimeDlyHMSM(0,0,5,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时100ms
 					Left_BK(0);Right_BK(0);
 					Left_FR(0);Right_FR(1);
 					Left_BK(1);Right_BK(1);
+					ult_detection=1;
 					ult_times2=0;
 				}
 			}
@@ -826,14 +1086,13 @@ void ultrasonic_task(void *p_arg)
 	}
 }
 
-u8 USART_RX_FLAG;
-u16 USART_RX_STORAGE;
+
 u8 AGV_INF[8];
-u8 AGV_485_BUF[8];
+
 void AGV_guide_task(void *p_arg)
 {
 	u8 len,i;
-	u8 AGV_485_STA;
+	
 	u16 usart_rx_ss;
 	unsigned short crc_check;
 
@@ -842,21 +1101,27 @@ void AGV_guide_task(void *p_arg)
 	
 	while(1)
 	{
-		
-		RS485_Receive_Data(AGV_485_BUF,&AGV_485_STA);
-		if(AGV_485_STA)
-		{					   
-//			len=USART_RX_STA&0x3fff;//得到此次接收到的数据长度
-			if(AGV_485_STA>8) AGV_485_STA=8;
-			crc_check=CRC16((uint8_t*)AGV_485_BUF,6);
-			if((AGV_485_BUF[7]==(crc_check>>8))&&(AGV_485_BUF[6]==(crc_check&0X00FF)))
+
+		RS485_Receive_Data(Rx_485_BUF,&Rx_485_STA);
+		if(Rx_485_STA)
+		{
+			RFID_485_STA=1;
+			if(Rx_485_BUF[0]==1)//磁轨第一位
 			{
-				for(i=0;i<8;i++)
+	//			len=USART_RX_STA&0x3fff;//得到此次接收到的数据长度
+				if(Rx_485_STA>8) Rx_485_STA=8;
+				crc_check=CRC16((uint8_t*)Rx_485_BUF,6);
+				if((Rx_485_BUF[7]==(crc_check>>8))&&(Rx_485_BUF[6]==(crc_check&0X00FF)))
 				{
-					AGV_INF[i]=AGV_485_BUF[i];
+					for(i=0;i<8;i++)
+					{
+						AGV_INF[i]=Rx_485_BUF[i];
+//						printf("%x",Rx_485_BUF[i]);
+					}
 				}
+//				Rx_485_STA=0;
 			}
-//			USART_RX_STA=0;
+//			Rx_485_STA=0;
 		}
 
 		OSTimeDlyHMSM(0,0,0,5,OS_OPT_TIME_HMSM_STRICT,&err); //延时100ms
@@ -892,6 +1157,7 @@ void motor_drive_task(void *p_arg)
 	u8 ult_flag=0;//检测到前方有障碍物时，控制进入避障流程
 	u8 direction_flag=0;//遇到障碍时0选择往左，1选择往右
 	u8 process_control=0;
+	u8 arrive_process_control=0;
 	u8 i;
 	OS_ERR err;
 	p_arg = p_arg;
@@ -901,7 +1167,7 @@ void motor_drive_task(void *p_arg)
 		AGV_feedback=AGV_INF[4];
 		AGV_feedback=(AGV_feedback<<8)+AGV_INF[5];
 //		printf("AGV_feedback%x\r\n",AGV_feedback);
-		if(ult_detection==0&&ult_flag==0)
+		if(ult_detection==0&&ult_flag==0&&LETS_RUN_FLAG==0)
 		{
 			
 			if(((0x0128<AGV_feedback&&AGV_feedback<0x03c8)||(AGV_feedback==0x0108)||(AGV_feedback==0x0060))&&AGV_feedback!=0)
@@ -914,13 +1180,23 @@ void motor_drive_task(void *p_arg)
 			{					
 				if(process_control==6)
 				{
-					TIM_SetTIM3Compare4(429);	//修改比较值，修改占空比左
+					
+					TIM_SetTIM3Compare4(459);	//修改比较值，修改占空比左
 					TIM_SetTIM3Compare3(349);	//修改比较值，修改占空比右
 					process_control=0;	
-					OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s	
+					OSTimeDlyHMSM(0,0,3,500,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s	
+				}
+				if(process_control==7)
+				{
+					
+					TIM_SetTIM3Compare4(498);	//修改比较值，修改占空比左
+					TIM_SetTIM3Compare3(349);	//修改比较值，修改占空比右
+					process_control=0;	
+					OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s	
 				}
 				else
 				{
+					printf("aaa\r\n");
 					TIM_SetTIM3Compare4(249);	//修改比较值，修改占空比左
 					TIM_SetTIM3Compare3(429);	//修改比较值，修改占空比右	
 				}					
@@ -936,17 +1212,120 @@ void motor_drive_task(void *p_arg)
 					OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
 
 				}
+				if(process_control==7)
+				{
+					
+					TIM_SetTIM3Compare4(349);	//修改比较值，修改占空比左
+					TIM_SetTIM3Compare3(498);	//修改比较值，修改占空比右
+					process_control=0;	
+					OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s	
+				}
 				else
 				{
+					printf("aaa\r\n");
 					TIM_SetTIM3Compare4(429);	//修改比较值，修改占空比左
 					TIM_SetTIM3Compare3(249);	//修改比较值，修改占空比右
 				}
 			}
-			
 		}
-		if(ult_detection>0) ult_flag=1;//检测到前方有障碍
+		if(LETS_RUN_FLAG==1)
+		{
+			if(RFID_RESULT==1||RFID_RESULT==2||RFID_RESULT==3)
+			{
+				if(arrive_process_control==0)
+				{
+					TIM_SetTIM3Compare4(349);	//修改比较值，修改占空比左
+					TIM_SetTIM3Compare3(498);	//修改比较值，修改占空比右
+					arrive_process_control=1;
+					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
+				}
+				if(arrive_process_control==1)
+				{
+					TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
+					TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
+					arrive_process_control=2;
+				}
+			}
+			if(arrive_process_control==2)
+			{
+				if(RFID_RESULT!=6||RFID_RESULT!=7||RFID_RESULT!=8)
+				{
+					if((AGV_feedback<0x8000)&&(AGV_feedback!=0))
+					{
+						Left_BK(0);Right_BK(0);
+						Left_FR(1);Right_FR(0);
+						Left_BK(1);Right_BK(1);
+						TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
+						TIM_SetTIM3Compare3(498);	//修改比较值，修改占空比右
+						OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
+						Left_BK(0);Right_BK(0);
+						Left_FR(0);Right_FR(1);
+						Left_BK(1);Right_BK(1);
+						TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
+						TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
+					}
+					if(AGV_feedback>0x8000)
+					{
+						Left_BK(0);Right_BK(0);
+						Left_FR(1);Right_FR(0);
+						Left_BK(1);Right_BK(1);
+						TIM_SetTIM3Compare4(498);	//修改比较值，修改占空比左
+						TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
+						OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
+						Left_BK(0);Right_BK(0);
+						Left_FR(0);Right_FR(1);
+						Left_BK(1);Right_BK(1);
+						TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
+						TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
+					}
+				}
+				if(RFID_RESULT==6||RFID_RESULT==7||RFID_RESULT==8)
+				{
+					TIM_SetTIM3Compare4(498);	//修改比较值，修改占空比左
+					TIM_SetTIM3Compare3(498);	//修改比较值，修改占空比右
+					LCD_Clear(WHITE);
+					qr_show:  OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);	
+					if(QR_CODE_RESULT==1) 
+					{
+						OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时5s
+						QR_CODE_RESULT=0;
+					}
+					else
+					{
+						OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //延时5s
+						goto qr_show;
+					}
+					OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
+					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
+					PCF8574_WriteBit(RS485_RE_IO,0);
+//					Left_BK(0);Right_BK(0);
+//					Left_FR(1);Right_FR(0);
+//					Left_BK(1);Right_BK(1);
+//					TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
+//					TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
+//					OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时5s
+//					Left_BK(0);Right_BK(0);
+//					Left_FR(0);Right_FR(1);
+//					Left_BK(1);Right_BK(1);
+					TIM_SetTIM3Compare4(498);	//修改比较值，修改占空比左
+					TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
+					OSTimeDlyHMSM(0,0,11,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时11s
+					TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比左
+					TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
+					process_control=7;
+					SELECT_TABLE_RESULT=0;
+					RFID_RESULT=0;
+					LETS_RUN_FLAG=0;
+					OSTaskSuspend((OS_TCB*)&LETS_RUNTaskTCB,&err);
+					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
+					arrive_process_control=0;
+				}
+			}
+		}
+		
+		if(ult_detection==1&LETS_RUN_FLAG==0) ult_flag=1;//检测到前方有障碍
 			
-		if((ult_flag==1)&&(direction_flag==0))
+		if((ult_flag==1)&&(direction_flag==0)&&LETS_RUN_FLAG==0)
 		{
 			if(process_control==0)
 			{
@@ -985,7 +1364,6 @@ void motor_drive_task(void *p_arg)
 				}
 				if(process_control==4)
 				{
-					
 					TIM_SetTIM3Compare4(498);	//修改比较值，修改占空比左
 					TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
 					process_control=5;
@@ -1044,7 +1422,7 @@ void motor_drive_task(void *p_arg)
 				}
 			}				
 		}
-		if((ult_flag==1)&&(direction_flag==1))
+		if((ult_flag==1)&&(direction_flag==1)&&(LETS_RUN_FLAG==0))
 		{
 			if(process_control==0)
 			{
@@ -1099,13 +1477,12 @@ void motor_drive_task(void *p_arg)
 //						TIM_SetTIM3Compare3(498);	//修改比较值，修改占空比右
 						ult_flag=0;
 						direction_flag=0;
-//						process_control=0;
+						process_control=6;
 						printf("ff\r\n");
 //						OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时2s
 //					}
 //					printf("w\r\n");
 				}
-				
 			}
 			if(ult_detection>0)
 			{
@@ -1145,17 +1522,15 @@ void motor_drive_task(void *p_arg)
 				}
 			}
 		}			
-		
-//		printf("%d %d %d\r\n",ult_detection,direction_flag,ult_flag);
+//		printf("%d %d %d %d\r\n",ult_detection,direction_flag,ult_flag,LETS_RUN_FLAG);
+//		printf("process_control %d\r\n",process_control);
 		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err); //延时10ms
-		
 	}
 }
 
 //lidar任务函数
 void MUSIC_task(void *p_arg)
 {
-	
 	OS_ERR err;
 	p_arg = p_arg;
     
@@ -1278,15 +1653,17 @@ void qr_decode(u16 imagewidth,u16 *imagebuf)
 	
 	if(result[0]==0)//没有识别出来
 	{
+		QR_CODE_RESULT=0;
 		bartype++;
 		if(bartype>=5)bartype=0; 
 	}
 	else if(result[0]!=0)//识别出来了，显示结果
 	{	
+		QR_CODE_RESULT=1;
 		PCF8574_WriteBit(BEEP_IO,0);//打开蜂鸣器
 		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
 		PCF8574_WriteBit(BEEP_IO,1);
-		POINT_COLOR=BLUE; 
+//		POINT_COLOR=BLUE; 
 		LCD_Fill(0,(lcddev.height+qr_image_width)/2+20,lcddev.width,lcddev.height,BLACK);
 		Show_Str(0,(lcddev.height+qr_image_width)/2+20,lcddev.width,
 								(lcddev.height-qr_image_width)/2-20,(u8*)result,16,0							

@@ -27,6 +27,7 @@ void motor_drive_Init(void)
 	Right_FR(1);
 	Left_BK(1);
 	Right_BK(1);
+//	Left_BK(0);Right_BK(0);
 
 }
 

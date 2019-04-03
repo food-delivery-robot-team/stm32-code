@@ -23,5 +23,9 @@ void TIM5_CH1_Cap_Init(u32 arr,u16 psc); 	//初始化TIM5_CH1输入捕获
 
 void TIM_SetTIM3Compare4(u32 compare);
 void TIM_SetTIM3Compare3(u32 compare);
+
+extern TIM_HandleTypeDef TIM7_Handler;      //定时器3PWM句柄 
+void TIM7_Int_Init(u16 arr,u16 psc);
+
 #endif
 

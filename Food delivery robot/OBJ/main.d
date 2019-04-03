@@ -139,3 +139,4 @@
 ..\obj\main.o: ..\HARDWARE\WM8978\wm8978.h
 ..\obj\main.o: ..\APP\audioplay.h
 ..\obj\main.o: ..\AUDIOCODEC\wav\wavplay.h
+..\obj\main.o: ..\ATK_ESP8266\common.h

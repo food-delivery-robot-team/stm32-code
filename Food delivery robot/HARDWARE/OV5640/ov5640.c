@@ -78,7 +78,7 @@ u8 OV5640_Init(void)
     GPIO_Initure.Speed=GPIO_SPEED_HIGH;     //高速
     HAL_GPIO_Init(GPIOA,&GPIO_Initure);     //初始化
     
-	PCF8574_Init();			//初始化PCF8574
+//	PCF8574_Init();			//初始化PCF8574
 	OV5640_RST(0);			//必须先拉低OV5640的RST脚,再上电
 	delay_ms(20); 
 	OV5640_PWDN_Set(0);		//POWER ON
