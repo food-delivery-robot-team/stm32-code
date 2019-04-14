@@ -1,4 +1,6 @@
 #include "usart.h"
+#include "lidar.h"
+#include "math.h"
 ////////////////////////////////////////////////////////////////////////////////// 	 
 //如果使用os,则包括下面的头文件即可.
 #if SYSTEM_SUPPORT_OS
@@ -234,7 +236,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	}
 }
  
+extern u8 lidar_i,lidar_LSN,lidar_b,lidar_n,lidar_c,lidar_a,lidar_m,Lidar_Data[150];
 
+extern float AngleFSA,AngleLSA,Anglei[100],Distance[100],x[100],y[100]; //初始角,结束角,中间角,距离
+u8 Lidar_receive_flag;
 
 //串口1中断服务程序
 void USART1_IRQHandler(void)                	
@@ -262,6 +267,33 @@ void USART1_IRQHandler(void)
         timeout++; //超时处理
         if(timeout>maxDelay) break;	
 	}
+	
+//	HAL_UART_Receive(&UART1_Handler,(u8 *)aRxBuffer,RXBUFFERSIZE,10);
+	HAL_UART_Receive_IT(&UART1_Handler,(u8 *)aRxBuffer,RXBUFFERSIZE);
+
+	if(*aRxBuffer==0xAA)
+	{		
+	   lidar_a=0;
+	   lidar_b=0;
+	   lidar_n=0;
+	   lidar_i=1;
+	   lidar_c=0;
+	}
+	Lidar_Data[lidar_a]=*aRxBuffer;
+	
+	AngleFSA_Cal();
+	AngleLSA_Cal();
+	Anglei_Cal();
+	Distance_Cal();
+	Adumbrate();
+			
+//		evade();
+			
+	lidar_a++;			
+			
+	
+	Lidar_receive_flag=1;
+	
 #if SYSTEM_SUPPORT_OS	 	//使用OS
 	OSIntExit();  											 
 #endif

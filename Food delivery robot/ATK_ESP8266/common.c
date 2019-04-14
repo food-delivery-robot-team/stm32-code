@@ -74,27 +74,27 @@ u8* atk_8266_check_cmd(u8 *str)
 u8 atk_8266_send_cmd(u8 *cmd,u8 *ack,u16 waittime)
 {
 	u8 res=0; 
-	USART3_RX_STA=0;
-	u3_printf("%s\r\n",cmd);	//发送命令
+	USART_RX_STA=0;
+	printf("%s\r\n",cmd);	//发送命令
 	if(ack&&waittime)		//需要等待应答
 	{
 		while(--waittime)	//等待倒计时
 		{
 			delay_ms(10);
-			if(USART3_RX_STA&0X8000)//接收到期待的应答结果
+			if(USART_RX_STA&0X8000)//接收到期待的应答结果
 			{
 				if(atk_8266_check_cmd(ack))
 				{
 					printf("ack:%s\r\n",(u8*)ack);
 					break;//得到有效数据 
 				}
-					USART3_RX_STA=0;
+					USART_RX_STA=0;
 			} 
 		}
 		if(waittime==0)res=1; 
 	}
 	return res;
-} 
+}
 //向ATK-ESP8266发送指定数据
 //data:发送的数据(不需要添加回车了)
 //ack:期待的应答结果,如果为空,则表示不需要等待应答

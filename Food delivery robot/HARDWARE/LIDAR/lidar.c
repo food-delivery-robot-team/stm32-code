@@ -6,22 +6,22 @@
 #include "delay.h"
 
 
-u8 a,m,Data[150];
+u8 lidar_a,lidar_m,Lidar_Data[150];
 
-float AngleFSA,AngleLSA,Anglei[100],Distance[100],x[100],y[100]; //³õÊ¼½Ç,½áÊø½Ç,ÖĞ¼ä½Ç,¾àÀë
+float AngleFSA,AngleLSA,Anglei[100],Lidar_Distance[100],Lidar_x[100],Lidar_y[100]; //³õÊ¼½Ç,½áÊø½Ç,ÖĞ¼ä½Ç,¾àÀë
 
-u8 i,LSN,b,n,c;
+u8 lidar_i,lidar_LSN,lidar_b,lidar_n,lidar_c;
 
 
 void AngleFSA_Cal(void)   //³õÊ¼½Ç¼ÆËã
 {
 	u32 AngleFSAL,AngleFSAH;
 		
-	  if(a==5)
+	  if(lidar_a==5)
 		{
-		AngleFSAL=Data[4];
-		AngleFSAH=Data[5];
-		AngleFSA=(((AngleFSAH*256)+AngleFSAL)>>1)*0.015625;
+			AngleFSAL=Lidar_Data[4];
+			AngleFSAH=Lidar_Data[5];
+			AngleFSA=(((AngleFSAH*256)+AngleFSAL)>>1)*0.015625;
 		}
 }
 
@@ -29,12 +29,11 @@ void AngleLSA_Cal(void)   //½áÊø½Ç¼ÆËã
 {
   u32 AngleLSAL,AngleLSAH;
 	
-	  if(a==7)
+	  if(lidar_a==7)
 		{
-    AngleLSAL=Data[6];
-		AngleLSAH=Data[7];
-		AngleLSA=(((AngleLSAH*256)+AngleLSAL)>>1)*0.015625;
-
+			AngleLSAL=Lidar_Data[6];
+			AngleLSAH=Lidar_Data[7];
+			AngleLSA=(((AngleLSAH*256)+AngleLSAL)>>1)*0.015625;
 		}
 }
 		
@@ -42,12 +41,12 @@ void Distance_Cal(void)   //¾àÀë¼ÆËã
 { 
 	  u32 DistanceH,DistanceL;
 	  
-		if((a>9)&&(a%2==1))
+		if((lidar_a>9)&&(lidar_a%2==1))
 		{
-	      DistanceL=Data[a-1];
-				DistanceH=Data[a];
-				Distance[b]=((DistanceH*256)+DistanceL)*0.25;
-        b++;
+			DistanceL=Lidar_Data[lidar_a-1];
+			DistanceH=Lidar_Data[lidar_a];
+			Lidar_Distance[lidar_b]=((DistanceH*256)+DistanceL)*0.25;
+			lidar_b++;
 		}
 		
 
@@ -55,25 +54,25 @@ void Distance_Cal(void)   //¾àÀë¼ÆËã
 
 void Anglei_Cal(void)   //ÖĞ¼ä½Ç¼ÆËã
 { 
-	if(a==3)
+	if(lidar_a==3)
 	{
-		LSN=Data[3];
+		lidar_LSN=Lidar_Data[3];
 	}
 	
-	if(LSN==1)
+	if(lidar_LSN==1)
 	{
-	   Anglei[n]=AngleFSA;
+	   Anglei[lidar_n]=AngleFSA;
 	}
 	
-	if(LSN>1)
+	if(lidar_LSN>1)
 	{		
-			if((a>7)&&(i<=LSN))
+			if((lidar_a>7)&&(lidar_i<=lidar_LSN))
 			{
-								Anglei[n]=((AngleLSA-AngleFSA)/(LSN-1))*(i-1)+AngleFSA;
-								n++;
-								i++;
+				Anglei[lidar_n]=((AngleLSA-AngleFSA)/(lidar_LSN-1))*(lidar_i-1)+AngleFSA;
+				lidar_n++;
+				lidar_i++;
 			}
-  }
+    }
 	
 }
 
@@ -82,9 +81,9 @@ void Adumbrate(void)   //»­ÂÖÀª
   float val;
 	
 	val=PI/180;
-	x[c]=sin((360-Anglei[c])*val)*Distance[c];
-	y[c]=cos((360-Anglei[c])*val)*Distance[c];
-  c++;
+	Lidar_x[lidar_c]=sin((360-Anglei[lidar_c])*val)*Lidar_Distance[lidar_c];
+	Lidar_y[lidar_c]=cos((360-Anglei[lidar_c])*val)*Lidar_Distance[lidar_c];
+  lidar_c++;
 				
 }	
 
@@ -93,16 +92,16 @@ void evade(void)
   float Get_Ang,Get_Dis;
 	int h;
 	
-	if(a==0)
+	if(lidar_a==0)
 	{
-	h=0;
+		h=0;
 	}
 	
 //	move_forward();
-  if(a>9)
+  if(lidar_a>9)
 	{
 			Get_Ang=Anglei[h];
-			Get_Dis=Distance[h];
+			Get_Dis=Lidar_Distance[h];
 
 			
 			if((Get_Ang>0)&&(Get_Ang<30)&&(Get_Dis<400)&&(Get_Dis>0))

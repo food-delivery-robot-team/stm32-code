@@ -32,6 +32,7 @@
 #include "audioplay.h"
 #include "common.h"
 #include "text.h"
+#include "math.h"
 
 
 /************************************************
@@ -115,9 +116,9 @@ CPU_STK AGV_guide_TASK_STK[AGV_guide_STK_SIZE];
 void AGV_guide_task(void *p_arg);
 
 //任务优先级
-#define lidar_TASK_PRIO		5
+#define lidar_TASK_PRIO		4
 //任务堆栈大小	
-#define lidar_STK_SIZE       256
+#define lidar_STK_SIZE       512
 //任务控制块
 OS_TCB lidarTaskTCB;
 //任务堆栈	
@@ -198,7 +199,15 @@ void runing_task(void *p_arg);
 //OS_TMR	tmr2;		//定时器2
 //void tmr1_callback(void *p_tmr, void *p_arg); 	//定时器1回调函数
 //void tmr2_callback(void *p_tmr, void *p_arg);	//定时器2回调函数
+u8 Lidar_Start[2]={0xA5,0x60};
+u8 Lidar_Stop[2]={0xA5,0x65};  //开始扫描,停止扫描
 
+
+u8 ult_detection;
+u8 music_play;
+
+u8 interface_menu;
+u8 TOUCH_flag;
 
 u8 Rx_485_BUF[15];
 u8 Rx_485_STA;
@@ -241,7 +250,7 @@ int main(void)
     HAL_Init();				        //初始化HAL库
     Stm32_Clock_Init(432,25,2,9);   //设置时钟,216Mhz 
     delay_init(216);                //延时初始化
-	uart_init(115200);		        //串口初始化
+	uart_init(128000);		        //串口初始化
 	usart3_init(115200);  						//初始化串口3波特率为115200
 	usmart_dev.init(108); 		    //初始化USMART	
     LED_Init();                     //初始化LED
@@ -275,6 +284,10 @@ int main(void)
 	
 	TIM_SetTIM3Compare4(399);	//修改比较值，修改占空比
 	TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比
+	
+	LCD_Draw_Circle(240,400,2);  //标记雷达中心
+	
+//	HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Start,2);          //串口发送启动指令
 	
 	POINT_COLOR=RED; 
 	LCD_Clear(BLACK); 	
@@ -477,7 +490,7 @@ void start_task(void *p_arg)
                  (void   	* )0,				
                  (OS_OPT      )OS_OPT_TASK_STK_CHK|OS_OPT_TASK_STK_CLR|OS_OPT_TASK_SAVE_FP, 
                  (OS_ERR 	* )&err);
-//创建RFID任务
+	//创建MUSIC任务
 	OSTaskCreate((OS_TCB 	* )&MUSICTaskTCB,		
 				 (CPU_CHAR	* )"MUSIC task", 		
                  (OS_TASK_PTR )MUSIC_task, 			
@@ -587,6 +600,7 @@ void start_task(void *p_arg)
 void runing_task(void *p_arg)
 {
 	u8 key;
+	u16 times;
 	
 	OS_ERR err;
 	p_arg = p_arg;
@@ -594,6 +608,7 @@ void runing_task(void *p_arg)
 	OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
 	OSTaskSuspend((OS_TCB*)&SELECT_TABLETaskTCB,&err);
 	OSTaskSuspend((OS_TCB*)&LETS_RUNTaskTCB,&err);
+	OSTaskSuspend((OS_TCB*)&lidarTaskTCB,&err);
 	
 	seconfary_menu=0;
 	while(1)
@@ -609,46 +624,83 @@ void runing_task(void *p_arg)
 				{
 					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
 					OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);	
+					TOUCH_flag=1;
+					seconfary_menu=1;
 	//				printf("resume\r\n");
 				}
 				else if(tp_dev.x[0]>20&&tp_dev.y[0]>100&&tp_dev.x[0]<160&&tp_dev.y[0]<180&&seconfary_menu==0)
 				{
 					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
 					OSTaskResume((OS_TCB*)&SELECT_TABLETaskTCB,&err);	
+					TOUCH_flag=2;
+					seconfary_menu=1;
 				}
 				else if(tp_dev.x[0]>20&&tp_dev.y[0]>200&&tp_dev.x[0]<160&&tp_dev.y[0]<280&&seconfary_menu==0)
 				{
+					HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Start,2);          //串口发送启动指令
 					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
 					OSTaskResume((OS_TCB*)&lidarTaskTCB,&err);	
+					
+					
+//					OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
+//					OSTaskSuspend((OS_TCB*)&SELECT_TABLETaskTCB,&err);
+//					OSTaskSuspend((OS_TCB*)&LETS_RUNTaskTCB,&err);
+//					OSTaskSuspend((OS_TCB*)&motor_driveTaskTCB,&err);
+//					OSTaskSuspend((OS_TCB*)&AGV_guideTaskTCB,&err);
+//					OSTaskSuspend((OS_TCB*)&ultrasonicTaskTCB,&err);
+//					OSTaskSuspend((OS_TCB*)&WIFITaskTCB,&err);
+//					OSTaskSuspend((OS_TCB*)&MUSICTaskTCB,&err);
+//					OSTaskSuspend((OS_TCB*)&RFIDTaskTCB,&err);
+					
+					
+					TOUCH_flag=3;
+					seconfary_menu=1;
 				}
-				else if(tp_dev.x[0]>180&&tp_dev.y[0]>20&&tp_dev.x[0]<280&&tp_dev.y[0]<80)
+				else if(tp_dev.x[0]>180&&tp_dev.y[0]>20&&tp_dev.x[0]<280&&tp_dev.y[0]<80&&seconfary_menu==1)
 				{
 					OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
 					OSTaskSuspend((OS_TCB*)&SELECT_TABLETaskTCB,&err);
+					HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Stop,2);          //串口发送启动指令
 					OSTaskSuspend((OS_TCB*)&lidarTaskTCB,&err);
 //					printf("suspend\r\n");
 //					LCD_Clear(WHITE);
 					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
 					seconfary_menu=0;
 				}
-				else if(((tp_dev.x[0]>20&&tp_dev.y[0]>170&&tp_dev.x[0]<120&&tp_dev.y[0]<230&&seconfary_menu==1)||
+				else if((tp_dev.x[0]>20&&tp_dev.y[0]>170&&tp_dev.x[0]<120&&tp_dev.y[0]<230&&seconfary_menu==1)||
 						(tp_dev.x[0]>20&&tp_dev.y[0]>290&&tp_dev.x[0]<120&&tp_dev.y[0]<350&&seconfary_menu==1)||
 						(tp_dev.x[0]>160&&tp_dev.y[0]>120&&tp_dev.x[0]<260&&tp_dev.y[0]<280&&seconfary_menu==1)||
 						(tp_dev.x[0]>160&&tp_dev.y[0]>240&&tp_dev.x[0]<260&&tp_dev.y[0]<300&&seconfary_menu==1)||
-						(tp_dev.x[0]>160&&tp_dev.y[0]>360&&tp_dev.x[0]<260&&tp_dev.y[0]<420&&seconfary_menu==1))&&seconfary_menu==1)
+						(tp_dev.x[0]>160&&tp_dev.y[0]>360&&tp_dev.x[0]<260&&tp_dev.y[0]<420&&seconfary_menu==1))
 						{
+							if(tp_dev.x[0]>20&&tp_dev.y[0]>170&&tp_dev.x[0]<120&&tp_dev.y[0]<230&&seconfary_menu==1)  SELECT_TABLE_RESULT=1;
+							if(tp_dev.x[0]>20&&tp_dev.y[0]>290&&tp_dev.x[0]<120&&tp_dev.y[0]<350&&seconfary_menu==1)  SELECT_TABLE_RESULT=2;
+							if(tp_dev.x[0]>160&&tp_dev.y[0]>120&&tp_dev.x[0]<260&&tp_dev.y[0]<280&&seconfary_menu==1) SELECT_TABLE_RESULT=3;
+							if(tp_dev.x[0]>160&&tp_dev.y[0]>240&&tp_dev.x[0]<260&&tp_dev.y[0]<300&&seconfary_menu==1) SELECT_TABLE_RESULT=4;
+							if(tp_dev.x[0]>160&&tp_dev.y[0]>360&&tp_dev.x[0]<260&&tp_dev.y[0]<420&&seconfary_menu==1) SELECT_TABLE_RESULT=5;					
+							
 							OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
 							OSTaskSuspend((OS_TCB*)&SELECT_TABLETaskTCB,&err);
+							HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Stop,2);          //串口发送启动指令
 							OSTaskSuspend((OS_TCB*)&lidarTaskTCB,&err);
 		//					printf("suspend\r\n");
 		//					LCD_Clear(WHITE);
 							OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
+							
+							OSTimeDlyHMSM(0,0,1,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+							
 							seconfary_menu=0;
 						}
 				else OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//没有按键按下的时候 			   
 			}
 			
 		}else OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//没有按键按下的时候 
+		times++;
+		if(times==500) 
+		{
+			OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);//每两秒更新显示
+			times=0;
+		}
 	}
 }
 
@@ -660,15 +712,31 @@ void interface_task(void *p_arg)
 	p_arg = p_arg;
 	while(1)
 	{	
-		if(tp_dev.x[0]>20&&tp_dev.y[0]>20&&tp_dev.x[0]<160&&tp_dev.y[0]<80||
-		   tp_dev.x[0]>20&&tp_dev.y[0]<280&&tp_dev.x[0]<160&&tp_dev.y[0]>200)
+		if(TOUCH_flag==0)
+		{
+			LCD_Clear(WHITE);//清屏 
+			LCD_DrawRectangle(20, 20, 160, 80);
+			LCD_ShowString(30,35,200,16,32,(u8*)"QR CODE");
+			LCD_DrawRectangle(20, 100, 160, 180);
+			LCD_ShowString(30,125,200,16,32,(u8*)"SELECT");
+			LCD_DrawRectangle(20, 200, 160, 280);
+			LCD_ShowString(30,220,200,16,32,(u8*)"LIDAR");
+			
+			LCD_ShowString(30,290,200,16,32,(u8*)"WIFI:");
+			LCD_ShowString(30,330,200,16,32,(u8*)"RX:");
+			LCD_ShowString(30,420,200,16,32,(u8*)"TASK:");
+			if(SELECT_TABLE_RESULT==0) LCD_ShowString(120,420,200,16,32,(u8*)"NONE");
+			else LCD_ShowNum(120,420,SELECT_TABLE_RESULT,1,32);
+			printf("SELECT_TABLE_RESULT %d",SELECT_TABLE_RESULT);
+		}
+		if(TOUCH_flag==1)
 		{
 			LCD_Clear(WHITE);//清屏 
 			LCD_DrawRectangle(180, 20, 280, 80);
 			LCD_ShowString(195,30,200,16,32,(u8*)"EXIT");		
-			
+			TOUCH_flag=0;
 		}
-		if(tp_dev.x[0]>20&&tp_dev.y[0]>100&&tp_dev.x[0]<160&&tp_dev.y[0]<180)
+		if(TOUCH_flag==2)
 		{
 			LCD_Clear(WHITE);//清屏 
 			LCD_DrawRectangle(180, 20, 260, 80);
@@ -683,26 +751,20 @@ void interface_task(void *p_arg)
 			LCD_ShowString(210,250,200,16,32,(u8*)"4");
 			LCD_DrawRectangle(160, 360, 260, 420);
 			LCD_ShowString(210,370,200,16,32,(u8*)"5");
+			TOUCH_flag=0;
 		}
-		else
+		if(TOUCH_flag==3)
 		{
 			LCD_Clear(WHITE);//清屏 
-			LCD_DrawRectangle(20, 20, 160, 80);
-			LCD_ShowString(30,35,200,16,32,(u8*)"QR CODE");
-			LCD_DrawRectangle(20, 100, 160, 180);
-			LCD_ShowString(30,125,200,16,32,(u8*)"SELECT");
-			LCD_DrawRectangle(20, 200, 160, 280);
-			LCD_ShowString(30,220,200,16,32,(u8*)"LIDAR");
-			
-			LCD_ShowString(30,290,200,16,32,(u8*)"WIFI:");
-			LCD_ShowString(30,330,200,16,32,(u8*)"RX:");
-			LCD_ShowString(30,420,200,16,32,(u8*)"TASK:");
-			if(SELECT_TABLE_RESULT==0) LCD_ShowString(120,420,200,16,32,(u8*)"NONE");
-			else LCD_ShowNum(120,400,SELECT_TABLE_RESULT,1,32);
-			printf("SELECT_TABLE_RESULT %d",SELECT_TABLE_RESULT);
+			LCD_DrawRectangle(180, 20, 260, 80);
+			LCD_ShowString(195,30,200,16,32,(u8*)"EXIT");
+			LCD_Draw_Circle(240,400,2);  //标记雷达中心
+			TOUCH_flag=0;
 		}
+		
 		OSTaskSuspend((OS_TCB*)&interfaceTaskTCB,&err);
 	}
+	
 	
 	
 }
@@ -719,61 +781,59 @@ void ov5640_task(void *p_arg)
 
 		while(1)
 		{
-			if(tp_dev.sta&TP_PRES_DOWN)			//触摸屏被按下
-			{
-				seconfary_menu=1;
-				i++;
-				
-			}
+
+			seconfary_menu=1;
+//			i++;
+
 			OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
-			if(i>0) 
-			{
-//				OV5640_Init();					//初始化OV5640
-//				
-//				while(OV5640_Init())//初始化OV5640
-//				{
-//					Show_Str(30,190,240,16,(u8*)"OV5640 错误!",16,0);
-//					OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
-//					LCD_Fill(30,190,239,206,WHITE);
-//					OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
-//				}	
-//				//自动对焦初始化
-//				OV5640_RGB565_Mode();		//RGB565模式 
-//				OV5640_Focus_Init(); 
-//				OV5640_Light_Mode(0);		//自动模式
-//				OV5640_Color_Saturation(3);	//色彩饱和度0
-//				OV5640_Brightness(4);		//亮度0
-//				OV5640_Contrast(3);			//对比度0
-//				OV5640_Sharpness(33);		//自动锐度
-//				OV5640_Focus_Constant();//启动持续对焦
-//				DCMI_Init();						//DCMI配置 
-//				
-//				qr_image_width=lcddev.width;
-//				if(qr_image_width>480)qr_image_width=480;//这里qr_image_width设置为240的倍数
-//				if(qr_image_width==320)qr_image_width=240;
-//				Show_Str(0,(lcddev.height+qr_image_width)/2+4,240,16,(u8*)"识别结果：",16,1);
-//				
-//				dcmi_line_buf[0]=mymalloc(SRAMIN,qr_image_width*2);						//为行缓存接收申请内存	
-//				dcmi_line_buf[1]=mymalloc(SRAMIN,qr_image_width*2);						//为行缓存接收申请内存
-//				rgb_data_buf=mymalloc(SRAMEX,qr_image_width*qr_image_width*2);//为rgb帧缓存申请内存
-//				
-//				dcmi_rx_callback=qr_dcmi_rx_callback;//DMA数据接收中断回调函数
-//				DCMI_DMA_Init((u32)dcmi_line_buf[0],(u32)dcmi_line_buf[1],qr_image_width/2,DMA_MDATAALIGN_HALFWORD,DMA_MINC_ENABLE);//DCMI DMA配置  
-//				fac=800/qr_image_width;	//得到比例因子
-//				OV5640_OutSize_Set((1280-fac*qr_image_width)/2,(800-fac*qr_image_width)/2,qr_image_width,qr_image_width); 
-//				DCMI_Start(); 					//启动传输	 
-//					
-//				printf("SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
-//				printf("SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
-//				printf("SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM)); 
-//				
-//				atk_qr_init();//初始化识别库，为算法申请内存
-//				
-//				printf("1SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
-//				printf("1SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
-//				printf("1SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM));
-				i=0;
-			}
+//			if(i>0) 
+//			{
+////				OV5640_Init();					//初始化OV5640
+////				
+////				while(OV5640_Init())//初始化OV5640
+////				{
+////					Show_Str(30,190,240,16,(u8*)"OV5640 错误!",16,0);
+////					OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+////					LCD_Fill(30,190,239,206,WHITE);
+////					OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+////				}	
+////				//自动对焦初始化
+////				OV5640_RGB565_Mode();		//RGB565模式 
+////				OV5640_Focus_Init(); 
+////				OV5640_Light_Mode(0);		//自动模式
+////				OV5640_Color_Saturation(3);	//色彩饱和度0
+////				OV5640_Brightness(4);		//亮度0
+////				OV5640_Contrast(3);			//对比度0
+////				OV5640_Sharpness(33);		//自动锐度
+////				OV5640_Focus_Constant();//启动持续对焦
+////				DCMI_Init();						//DCMI配置 
+////				
+////				qr_image_width=lcddev.width;
+////				if(qr_image_width>480)qr_image_width=480;//这里qr_image_width设置为240的倍数
+////				if(qr_image_width==320)qr_image_width=240;
+////				Show_Str(0,(lcddev.height+qr_image_width)/2+4,240,16,(u8*)"识别结果：",16,1);
+////				
+////				dcmi_line_buf[0]=mymalloc(SRAMIN,qr_image_width*2);						//为行缓存接收申请内存	
+////				dcmi_line_buf[1]=mymalloc(SRAMIN,qr_image_width*2);						//为行缓存接收申请内存
+////				rgb_data_buf=mymalloc(SRAMEX,qr_image_width*qr_image_width*2);//为rgb帧缓存申请内存
+////				
+////				dcmi_rx_callback=qr_dcmi_rx_callback;//DMA数据接收中断回调函数
+////				DCMI_DMA_Init((u32)dcmi_line_buf[0],(u32)dcmi_line_buf[1],qr_image_width/2,DMA_MDATAALIGN_HALFWORD,DMA_MINC_ENABLE);//DCMI DMA配置  
+////				fac=800/qr_image_width;	//得到比例因子
+////				OV5640_OutSize_Set((1280-fac*qr_image_width)/2,(800-fac*qr_image_width)/2,qr_image_width,qr_image_width); 
+////				DCMI_Start(); 					//启动传输	 
+////					
+////				printf("SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
+////				printf("SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
+////				printf("SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM)); 
+////				
+////				atk_qr_init();//初始化识别库，为算法申请内存
+////				
+////				printf("1SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
+////				printf("1SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
+////				printf("1SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM));
+//				i=0;
+//			}
 			if(readok==1)			//采集到了一帧图像
 			{		
 				readok=0;
@@ -842,15 +902,15 @@ void SELECT_TABLE_task(void *p_arg)
 	
 	while(1)
 	{
-		if(tp_dev.sta&TP_PRES_DOWN)			//触摸屏被按下
-		{
-			seconfary_menu=1;
-		}
-		if(tp_dev.x[0]>20&&tp_dev.y[0]>170&&tp_dev.x[0]<120&&tp_dev.y[0]<230&&seconfary_menu==1)  SELECT_TABLE_RESULT=1;
-		if(tp_dev.x[0]>20&&tp_dev.y[0]>290&&tp_dev.x[0]<120&&tp_dev.y[0]<350&&seconfary_menu==1)  SELECT_TABLE_RESULT=2;
-		if(tp_dev.x[0]>160&&tp_dev.y[0]>120&&tp_dev.x[0]<260&&tp_dev.y[0]<280&&seconfary_menu==1) SELECT_TABLE_RESULT=3;
-		if(tp_dev.x[0]>160&&tp_dev.y[0]>240&&tp_dev.x[0]<260&&tp_dev.y[0]<300&&seconfary_menu==1) SELECT_TABLE_RESULT=4;
-		if(tp_dev.x[0]>160&&tp_dev.y[0]>360&&tp_dev.x[0]<260&&tp_dev.y[0]<420&&seconfary_menu==1) SELECT_TABLE_RESULT=5;
+//		if(tp_dev.sta&TP_PRES_DOWN)			//触摸屏被按下
+//		{
+//			seconfary_menu=1;
+//		}
+//		if(tp_dev.x[0]>20&&tp_dev.y[0]>170&&tp_dev.x[0]<120&&tp_dev.y[0]<230&&seconfary_menu==1)  SELECT_TABLE_RESULT=1;
+//		if(tp_dev.x[0]>20&&tp_dev.y[0]>290&&tp_dev.x[0]<120&&tp_dev.y[0]<350&&seconfary_menu==1)  SELECT_TABLE_RESULT=2;
+//		if(tp_dev.x[0]>160&&tp_dev.y[0]>120&&tp_dev.x[0]<260&&tp_dev.y[0]<280&&seconfary_menu==1) SELECT_TABLE_RESULT=3;
+//		if(tp_dev.x[0]>160&&tp_dev.y[0]>240&&tp_dev.x[0]<260&&tp_dev.y[0]<300&&seconfary_menu==1) SELECT_TABLE_RESULT=4;
+//		if(tp_dev.x[0]>160&&tp_dev.y[0]>360&&tp_dev.x[0]<260&&tp_dev.y[0]<420&&seconfary_menu==1) SELECT_TABLE_RESULT=5;
 			
 //		printf("SELECT_TABLE_RESULT:%d\r\n",SELECT_TABLE_RESULT);
 		OSTaskResume((OS_TCB*)&LETS_RUNTaskTCB,&err);	
@@ -876,23 +936,91 @@ void LETS_RUN_task(void *p_arg)
 	}
 }
 
+extern u8 Lidar_receive_flag;
+
 //lidar任务函数
 void lidar_task(void *p_arg)
 {
+	
+	
+	u32 count;
+	extern float AngleFSA,AngleLSA,Anglei[100],Lidar_Distance[100],Lidar_x[100],Lidar_y[100]; //初始角,结束角,中间角,距离
+	extern u8 lidar_i,lidar_LSN,lidar_b,lidar_n,lidar_c;
+	extern u8 lidar_a,lidar_m,Lidar_Data[150];//接收数组
+	float k;
+	u8 key;
+	
 	OS_ERR err;
 	p_arg = p_arg;
 	
 	while(1)
 	{
 		
-		if(tp_dev.sta&TP_PRES_DOWN)			//触摸屏被按下
+//		if(tp_dev.sta&TP_PRES_DOWN)			//触摸屏被按下
+//		{
+//			seconfary_menu=1;
+//		}
+		
+		LCD_Draw_Circle(240,400,2);  //标记雷达中心
+		
+//		if(Lidar_receive_flag==1)
+//		{
+//			Lidar_receive_flag=0;
+
+//				
+//			
+//		}
+		
+		key=KEY_Scan(0);
+			switch(key)
+			{				 
+				
+				case  KEY2_PRES:	//LCD比例放大
+							k=k+0.02f;
+							break;
+				
+				case  KEY0_PRES:	//LCD比例缩小
+							k=k-0.02f;
+							break;
+				case  KEY1_PRES:	//LCD比例放大
+							HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Start,2);          //串口发送启动指令
+				
+							PCF8574_WriteBit(BEEP_IO,0);//打开蜂鸣器
+							OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+							PCF8574_WriteBit(BEEP_IO,1);
+							PCF8574_WriteBit(RS485_RE_IO,0);
+							break;
+			}
+		
+		if(k==0)
 		{
-			seconfary_menu=1;
+			k=0.02;
 		}
 		
-//		LCD_ShowString(20,160,200,16,32,(u8*)"lidar:");
+//		evade();
+			
+//		LCD_ShowString(0,80,240,32,32,"FSA=");	  //显示起始角,结束角
+//		LCD_ShowNum(80,80,AngleFSA,3,32);
+//		LCD_ShowString(0,120,240,32,32,"LSA=");	
+//		LCD_ShowNum(80,120,AngleLSA,3,32);
+	
+		for(lidar_m=0;lidar_m<=lidar_LSN;lidar_m++)
+		{
+//			LCD_DrawPoint(240-(Lidar_x[lidar_m]*k),400-(Lidar_y[lidar_m]*k));
+//			LCD_ShowNum(200,20*lidar_m,Anglei[lidar_m],6,16);                //LCD显示角度
+//			LCD_ShowNum(300,20*lidar_m,Distance[lidar_m],6,16);	       //LCD显示距离
+//			printf("%f,%f        ",Anglei[m],Distance[m]);  //串口显示
+		}
 		
-		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+		OSTimeDlyHMSM(0,0,0,3,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms				
+		count++;
+		if(count==250)
+		{
+			
+			LCD_Clear(WHITE);
+			count=0;
+		}
+		
 		
 	}
 }
@@ -959,18 +1087,22 @@ void WIFI_task(void *p_arg)
 						OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);	
 						OSTaskResume((OS_TCB*)&LETS_RUNTaskTCB,&err);	
 					}
-					if(USART3_RX_BUF[11]==0x0a&&USART3_RX_BUF[12]==0x0b) 
+					if(USART3_RX_BUF[11]==48&&USART3_RX_BUF[12]==53) 
 					{
-						SELECT_TABLE_RESULT=10;
+						SELECT_TABLE_RESULT=5;
 						OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);	
 						OSTaskResume((OS_TCB*)&LETS_RUNTaskTCB,&err);	
 					}
+					PCF8574_WriteBit(BEEP_IO,0);//打开蜂鸣器
+					OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+					PCF8574_WriteBit(BEEP_IO,1);
+					PCF8574_WriteBit(RS485_RE_IO,0);
 					printf("SELECT_TABLE_RESULT %d\r\n",SELECT_TABLE_RESULT);
 					USART3_RX_STA=0;
 
 				}
 		
-				if(t==1000)//连续10秒钟没有收到任何数据,检查连接是不是还存在.
+				if(t==1000&&seconfary_menu==0)//连续10秒钟没有收到任何数据,检查连接是不是还存在.
 				{
 					constate=atk_8266_consta_check();//得到连接状态
 					if(constate=='+')Show_Str(120,300,200,12,"连接成功",12,0);  //连接状态
@@ -992,8 +1124,7 @@ void WIFI_task(void *p_arg)
 
 extern u8  TIM5CH1_CAPTURE_STA;		//输入捕获状态		    				
 extern u32	TIM5CH1_CAPTURE_VAL;	//输入捕获值 
-u8 ult_detection;
-u8 music_play;
+
 
 void ultrasonic_task(void *p_arg)
 {
@@ -1013,7 +1144,7 @@ void ultrasonic_task(void *p_arg)
 			temp+=TIM5CH1_CAPTURE_VAL;      //得到总的高电平时间
 			temp=temp/58;
 			
-//			printf("HIGH:%lld cm\r\n",temp);//打印总的高点平时间		
+			printf("HIGH:%lld cm\r\n",temp);//打印总的高点平时间		
 			if(temp>60)
 			{
 				ult_times0++;
@@ -1230,7 +1361,7 @@ void motor_drive_task(void *p_arg)
 		}
 		if(LETS_RUN_FLAG==1)
 		{
-			if(RFID_RESULT==1||RFID_RESULT==2||RFID_RESULT==3)
+			if(RFID_RESULT==1||RFID_RESULT==2||RFID_RESULT==3||RFID_RESULT==5)
 			{
 				if(arrive_process_control==0)
 				{
@@ -1248,7 +1379,7 @@ void motor_drive_task(void *p_arg)
 			}
 			if(arrive_process_control==2)
 			{
-				if(RFID_RESULT!=6||RFID_RESULT!=7||RFID_RESULT!=8)
+				if(RFID_RESULT!=6||RFID_RESULT!=7||RFID_RESULT!=8||RFID_RESULT!=10)
 				{
 					if((AGV_feedback<0x8000)&&(AGV_feedback!=0))
 					{
@@ -1279,13 +1410,14 @@ void motor_drive_task(void *p_arg)
 						TIM_SetTIM3Compare3(399);	//修改比较值，修改占空比右
 					}
 				}
-				if(RFID_RESULT==6||RFID_RESULT==7||RFID_RESULT==8)
+				if(RFID_RESULT==6||RFID_RESULT==7||RFID_RESULT==8||RFID_RESULT==10)
 				{
 					TIM_SetTIM3Compare4(498);	//修改比较值，修改占空比左
 					TIM_SetTIM3Compare3(498);	//修改比较值，修改占空比右
 					LCD_Clear(WHITE);
-					qr_show:  OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);	
-					if(QR_CODE_RESULT==1) 
+					OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //延时5s
+					OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);
+					qr_show:  if(QR_CODE_RESULT==1) 
 					{
 						OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时5s
 						QR_CODE_RESULT=0;
@@ -1536,25 +1668,25 @@ void MUSIC_task(void *p_arg)
     
 	while(1)
 	{
-//		while(music_play)
-//		{
-//			static u16 i=0;
-//			i++;
-//			if(i==1)
-//			{
-//				W25QXX_Init();				   	//初始化W25Q256
-//				W25QXX_Init();				    //初始化W25Q256
-//				WM8978_Init();				    //初始化WM8978
-//				WM8978_HPvol_Set(40,40);	    //耳机音量设置
-//				WM8978_SPKvol_Set(30);		    //喇叭音量设置
-//				PCF8574_Init();					//初始化PCF8574
-//				
-//			}
-//			audio_play();
-//			
-//			if(i>5) i=2;
-//			OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
-//		}
+		while(music_play)
+		{
+			static u16 i=0;
+			i++;
+			if(i==1)
+			{
+				W25QXX_Init();				   	//初始化W25Q256
+				W25QXX_Init();				    //初始化W25Q256
+				WM8978_Init();				    //初始化WM8978
+				WM8978_HPvol_Set(40,40);	    //耳机音量设置
+				WM8978_SPKvol_Set(30);		    //喇叭音量设置
+				PCF8574_Init();					//初始化PCF8574
+				
+			}
+			audio_play();
+			
+			if(i>5) i=2;
+			OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+		}
 		OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
 	}
 }
