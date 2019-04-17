@@ -207,7 +207,7 @@ u8 ult_detection;
 u8 music_play;
 
 u8 interface_menu;
-u8 TOUCH_flag;
+u8 TOUCH_flag=0;
 
 u8 Rx_485_BUF[15];
 u8 Rx_485_STA;
@@ -338,12 +338,14 @@ int main(void)
 	printf("SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
 	printf("SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
 	printf("SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM)); 
+
 	
 	atk_qr_init();//³õÊ¼»¯Ê¶±ð¿â£¬ÎªËã·¨ÉêÇëÄÚ´æ
 	
 	printf("1SRAM IN:%d\r\n",my_mem_perused(SRAMIN));
 	printf("1SRAM EX:%d\r\n",my_mem_perused(SRAMEX));
 	printf("1SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM));
+
 	
 	POINT_COLOR=RED;
 	Show_Str_Mid(0,30,"ATK-ESP8266 WIFIÄ£¿é²âÊÔ",16,240); 
@@ -622,39 +624,49 @@ void runing_task(void *p_arg)
 //				printf("%d   %d",tp_dev.x[0],tp_dev.y[0]);
 				if(tp_dev.x[0]>20&&tp_dev.y[0]>20&&tp_dev.x[0]<160&&tp_dev.y[0]<80&&seconfary_menu==0)
 				{
-					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
-					OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);	
 					TOUCH_flag=1;
 					seconfary_menu=1;
+					
+					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
+					OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//Ã»ÓÐ°´¼ü°´ÏÂµÄÊ±ºò 
+					OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);	
+					
 	//				printf("resume\r\n");
 				}
 				else if(tp_dev.x[0]>20&&tp_dev.y[0]>100&&tp_dev.x[0]<160&&tp_dev.y[0]<180&&seconfary_menu==0)
 				{
-					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
-					OSTaskResume((OS_TCB*)&SELECT_TABLETaskTCB,&err);	
 					TOUCH_flag=2;
 					seconfary_menu=1;
+					
+					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
+					OSTaskResume((OS_TCB*)&SELECT_TABLETaskTCB,&err);	
+					
 				}
 				else if(tp_dev.x[0]>20&&tp_dev.y[0]>200&&tp_dev.x[0]<160&&tp_dev.y[0]<280&&seconfary_menu==0)
 				{
-					HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Start,2);          //´®¿Ú·¢ËÍÆô¶¯Ö¸Áî
-					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
-					OSTaskResume((OS_TCB*)&lidarTaskTCB,&err);	
-					
+					TOUCH_flag=3;
+					seconfary_menu=1;
 					
 //					OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
 //					OSTaskSuspend((OS_TCB*)&SELECT_TABLETaskTCB,&err);
-//					OSTaskSuspend((OS_TCB*)&LETS_RUNTaskTCB,&err);
-//					OSTaskSuspend((OS_TCB*)&motor_driveTaskTCB,&err);
-//					OSTaskSuspend((OS_TCB*)&AGV_guideTaskTCB,&err);
+////					OSTaskSuspend((OS_TCB*)&LETS_RUNTaskTCB,&err);
+////					OSTaskSuspend((OS_TCB*)&motor_driveTaskTCB,&err);
+////					OSTaskSuspend((OS_TCB*)&AGV_guideTaskTCB,&err);
 //					OSTaskSuspend((OS_TCB*)&ultrasonicTaskTCB,&err);
-//					OSTaskSuspend((OS_TCB*)&WIFITaskTCB,&err);
+////					OSTaskSuspend((OS_TCB*)&WIFITaskTCB,&err);
 //					OSTaskSuspend((OS_TCB*)&MUSICTaskTCB,&err);
-//					OSTaskSuspend((OS_TCB*)&RFIDTaskTCB,&err);
+////					OSTaskSuspend((OS_TCB*)&RFIDTaskTCB,&err);
+//				
+					HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Start,2);          //´®¿Ú·¢ËÍÆô¶¯Ö¸Áî
+					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
+					OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//Ã»ÓÐ°´¼ü°´ÏÂµÄÊ±ºò 
+					OSTaskResume((OS_TCB*)&lidarTaskTCB,&err);	
 					
 					
-					TOUCH_flag=3;
-					seconfary_menu=1;
+					
+					
+					
+					
 				}
 				else if(tp_dev.x[0]>180&&tp_dev.y[0]>20&&tp_dev.x[0]<280&&tp_dev.y[0]<80&&seconfary_menu==1)
 				{
@@ -727,7 +739,7 @@ void interface_task(void *p_arg)
 			LCD_ShowString(30,420,200,16,32,(u8*)"TASK:");
 			if(SELECT_TABLE_RESULT==0) LCD_ShowString(120,420,200,16,32,(u8*)"NONE");
 			else LCD_ShowNum(120,420,SELECT_TABLE_RESULT,1,32);
-			printf("SELECT_TABLE_RESULT %d",SELECT_TABLE_RESULT);
+//			printf("SELECT_TABLE_RESULT %d",SELECT_TABLE_RESULT);
 		}
 		if(TOUCH_flag==1)
 		{
@@ -785,7 +797,17 @@ void ov5640_task(void *p_arg)
 			seconfary_menu=1;
 //			i++;
 
-			OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±200ms
+			if(readok==1)			//²É¼¯µ½ÁËÒ»Ö¡Í¼Ïñ
+			{		
+				readok=0;
+				qr_show_image((lcddev.width-qr_image_width)/2,(lcddev.height-qr_image_width)/2,qr_image_width,qr_image_width,rgb_data_buf);
+				qr_decode(qr_image_width,rgb_data_buf);
+			}
+
+			
+			OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±200ms
+			
+			
 //			if(i>0) 
 //			{
 ////				OV5640_Init();					//³õÊ¼»¯OV5640
@@ -834,13 +856,7 @@ void ov5640_task(void *p_arg)
 ////				printf("1SRAM DCTM:%d\r\n",my_mem_perused(SRAMDTCM));
 //				i=0;
 //			}
-			if(readok==1)			//²É¼¯µ½ÁËÒ»Ö¡Í¼Ïñ
-			{		
-				readok=0;
-				qr_show_image((lcddev.width-qr_image_width)/2,(lcddev.height-qr_image_width)/2,qr_image_width,qr_image_width,rgb_data_buf);
-				qr_decode(qr_image_width,rgb_data_buf);
-			}
-
+			
 		}
 
 }
@@ -870,7 +886,7 @@ void RFID_task(void *p_arg)
 					for(i=0;i<14;i++)
 					{
 						receive[i]=Rx_485_BUF[i];
-						printf("%x\r\n",Rx_485_BUF[i]);
+//						printf("%x\r\n",Rx_485_BUF[i]);
 					}			
 				}
 				if((receive[1]==0x31)&&(receive[6]==0x33)&&(receive[10]==0x34)) RFID_RESULT=1;
@@ -885,7 +901,7 @@ void RFID_task(void *p_arg)
 				if((receive[1]==0x33)&&(receive[6]==0x34)&&(receive[10]==0x39)) RFID_RESULT=9;
 				if((receive[1]==0x33)&&(receive[6]==0x38)&&(receive[10]==0x37)) RFID_RESULT=10;
 				
-				printf("RFID_RESULT %d\r\n",RFID_RESULT);
+//				printf("RFID_RESULT %d\r\n",RFID_RESULT);
 			}
 			RFID_485_STA=0;
 		}
@@ -925,7 +941,7 @@ void LETS_RUN_task(void *p_arg)
 	
 	while(1)
 	{
-		printf("RFID_RESULT %d SELECT_TABLE_RESULT %d\r\n",RFID_RESULT,SELECT_TABLE_RESULT);
+//		printf("RFID_RESULT %d SELECT_TABLE_RESULT %d\r\n",RFID_RESULT,SELECT_TABLE_RESULT);
 		if((RFID_RESULT==SELECT_TABLE_RESULT)&&(SELECT_TABLE_RESULT>0))
 		{
 			LETS_RUN_FLAG=1;
@@ -947,7 +963,7 @@ void lidar_task(void *p_arg)
 	extern float AngleFSA,AngleLSA,Anglei[100],Lidar_Distance[100],Lidar_x[100],Lidar_y[100]; //³õÊ¼½Ç,½áÊø½Ç,ÖÐ¼ä½Ç,¾àÀë
 	extern u8 lidar_i,lidar_LSN,lidar_b,lidar_n,lidar_c;
 	extern u8 lidar_a,lidar_m,Lidar_Data[150];//½ÓÊÕÊý×é
-	float k;
+	float k=0.1;
 	u8 key;
 	
 	OS_ERR err;
@@ -956,69 +972,46 @@ void lidar_task(void *p_arg)
 	while(1)
 	{
 		
-//		if(tp_dev.sta&TP_PRES_DOWN)			//´¥ÃþÆÁ±»°´ÏÂ
-//		{
-//			seconfary_menu=1;
-//		}
 		
 		LCD_Draw_Circle(240,400,2);  //±ê¼ÇÀ×´ïÖÐÐÄ
 		
-//		if(Lidar_receive_flag==1)
-//		{
-//			Lidar_receive_flag=0;
 
-//				
-//			
-//		}
 		
 		key=KEY_Scan(0);
-			switch(key)
-			{				 
-				
-				case  KEY2_PRES:	//LCD±ÈÀý·Å´ó
-							k=k+0.02f;
-							break;
-				
-				case  KEY0_PRES:	//LCD±ÈÀýËõÐ¡
-							k=k-0.02f;
-							break;
-				case  KEY1_PRES:	//LCD±ÈÀý·Å´ó
-							HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Start,2);          //´®¿Ú·¢ËÍÆô¶¯Ö¸Áî
-				
-							PCF8574_WriteBit(BEEP_IO,0);//´ò¿ª·äÃùÆ÷
-							OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±200ms
-							PCF8574_WriteBit(BEEP_IO,1);
-							PCF8574_WriteBit(RS485_RE_IO,0);
-							break;
-			}
-		
+		switch(key)
+		{				 
+			
+			case  KEY2_PRES:	//LCD±ÈÀý·Å´ó
+						k=k+0.02f;
+						break;
+			
+			case  KEY0_PRES:	//LCD±ÈÀýËõÐ¡
+						k=k-0.02f;
+						break;
+		}
+	
 		if(k==0)
 		{
 			k=0.02;
 		}
 		
-//		evade();
-			
-//		LCD_ShowString(0,80,240,32,32,"FSA=");	  //ÏÔÊ¾ÆðÊ¼½Ç,½áÊø½Ç
-//		LCD_ShowNum(80,80,AngleFSA,3,32);
-//		LCD_ShowString(0,120,240,32,32,"LSA=");	
-//		LCD_ShowNum(80,120,AngleLSA,3,32);
+
 	
 		for(lidar_m=0;lidar_m<=lidar_LSN;lidar_m++)
 		{
-//			LCD_DrawPoint(240-(Lidar_x[lidar_m]*k),400-(Lidar_y[lidar_m]*k));
-//			LCD_ShowNum(200,20*lidar_m,Anglei[lidar_m],6,16);                //LCDÏÔÊ¾½Ç¶È
-//			LCD_ShowNum(300,20*lidar_m,Distance[lidar_m],6,16);	       //LCDÏÔÊ¾¾àÀë
-//			printf("%f,%f        ",Anglei[m],Distance[m]);  //´®¿ÚÏÔÊ¾
+			LCD_DrawPoint(240-(Lidar_x[lidar_m]*k),400-(Lidar_y[lidar_m]*k));
+
 		}
 		
 		OSTimeDlyHMSM(0,0,0,3,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±200ms				
 		count++;
-		if(count==250)
+		if(count>500)
 		{
-			
 			LCD_Clear(WHITE);
+			LCD_DrawRectangle(180, 20, 280, 80);
+			LCD_ShowString(195,30,200,16,32,(u8*)"EXIT");		
 			count=0;
+
 		}
 		
 		
@@ -1063,11 +1056,11 @@ void WIFI_task(void *p_arg)
 				{ 
 					rlen=USART3_RX_STA&0X7FFF;	//µÃµ½±¾´Î½ÓÊÕµ½µÄÊý¾Ý³¤¶È
 					USART3_RX_BUF[rlen]=0;		//Ìí¼Ó½áÊø·û 
-					for(i=0;i<rlen;i++)
-					{
-						printf("USART3_RX_BUF:%d\r\n",USART3_RX_BUF[i]);	//·¢ËÍµ½´®¿Ú   
-					}
-					printf("\r\n");	//·¢ËÍµ½´®¿Ú 
+//					for(i=0;i<rlen;i++)
+//					{
+//						printf("USART3_RX_BUF:%d\r\n",USART3_RX_BUF[i]);	//·¢ËÍµ½´®¿Ú   
+//					}
+//					printf("\r\n");	//·¢ËÍµ½´®¿Ú 
 					Show_Str(80,340,180,190,USART3_RX_BUF,12,0);//ÏÔÊ¾½ÓÊÕµ½µÄÊý¾Ý  
 					if(USART3_RX_BUF[11]==48&&USART3_RX_BUF[12]==49) 
 					{
@@ -1097,7 +1090,7 @@ void WIFI_task(void *p_arg)
 					OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±200ms
 					PCF8574_WriteBit(BEEP_IO,1);
 					PCF8574_WriteBit(RS485_RE_IO,0);
-					printf("SELECT_TABLE_RESULT %d\r\n",SELECT_TABLE_RESULT);
+//					printf("SELECT_TABLE_RESULT %d\r\n",SELECT_TABLE_RESULT);
 					USART3_RX_STA=0;
 
 				}
@@ -1144,7 +1137,7 @@ void ultrasonic_task(void *p_arg)
 			temp+=TIM5CH1_CAPTURE_VAL;      //µÃµ½×ÜµÄ¸ßµçÆ½Ê±¼ä
 			temp=temp/58;
 			
-			printf("HIGH:%lld cm\r\n",temp);//´òÓ¡×ÜµÄ¸ßµãÆ½Ê±¼ä		
+//			printf("HIGH:%lld cm\r\n",temp);//´òÓ¡×ÜµÄ¸ßµãÆ½Ê±¼ä		
 			if(temp>60)
 			{
 				ult_times0++;
@@ -1327,7 +1320,7 @@ void motor_drive_task(void *p_arg)
 				}
 				else
 				{
-					printf("aaa\r\n");
+//					printf("aaa\r\n");
 					TIM_SetTIM3Compare4(249);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
 					TIM_SetTIM3Compare3(429);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ	
 				}					
@@ -1353,7 +1346,7 @@ void motor_drive_task(void *p_arg)
 				}
 				else
 				{
-					printf("aaa\r\n");
+//					printf("aaa\r\n");
 					TIM_SetTIM3Compare4(429);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±È×ó
 					TIM_SetTIM3Compare3(249);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
 				}
@@ -1466,7 +1459,7 @@ void motor_drive_task(void *p_arg)
 				process_control=1;
 				OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
 		
-				printf("a\r\n");
+//				printf("a\r\n");
 			}
 //			printf("ult_detection%d\r\n",ult_detection);
 			if((ult_detection==0)&&(direction_flag==0))
@@ -1477,7 +1470,7 @@ void motor_drive_task(void *p_arg)
 					TIM_SetTIM3Compare3(399);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
 					process_control=2;
 					OSTimeDlyHMSM(0,0,5,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
-					printf("aa\r\n");
+//					printf("aa\r\n");
 				}
 				if(process_control==2)
 				{
@@ -1485,7 +1478,7 @@ void motor_drive_task(void *p_arg)
 					TIM_SetTIM3Compare3(399);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓ
 					process_control=3;
 					OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
-					printf("bb\r\n");
+//					printf("bb\r\n");
 				}
 				if(process_control==3)
 				{
@@ -1511,7 +1504,7 @@ void motor_drive_task(void *p_arg)
 					ult_flag=0;
 //					process_control=0;
 //					OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
-					printf("cc\r\n");
+//					printf("cc\r\n");
 
 				}
 				
@@ -1531,7 +1524,7 @@ void motor_drive_task(void *p_arg)
 					Left_FR(0);Right_FR(1);
 					Left_BK(1);Right_BK(1);
 					process_control=0;
-					printf("c\r\n");
+//					printf("c\r\n");
 				}
 				if(process_control==2)
 				{
@@ -1562,7 +1555,7 @@ void motor_drive_task(void *p_arg)
 				TIM_SetTIM3Compare3(399);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
 				OSTimeDlyHMSM(0,0,4,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
 				process_control=1;
-				printf("q\r\n");
+//				printf("q\r\n");
 			}
 //			OSTimeDlyHMSM(0,0,1,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
 			if(ult_detection==0)
@@ -1573,7 +1566,7 @@ void motor_drive_task(void *p_arg)
 					TIM_SetTIM3Compare3(399);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
 					process_control=2;
 					OSTimeDlyHMSM(0,0,6,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
-					printf("ww\r\n");
+//					printf("ww\r\n");
 				}
 				if(process_control==2)
 				{
@@ -1581,7 +1574,7 @@ void motor_drive_task(void *p_arg)
 					TIM_SetTIM3Compare3(498);	//ÐÞ¸Ä±È½ÏÖµ£¬ÐÞ¸ÄÕ¼¿Õ±ÈÓÒ
 					process_control=3;
 					OSTimeDlyHMSM(0,0,3,500,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
-					printf("ee\r\n");
+//					printf("ee\r\n");
 				}
 				if(process_control==3)
 				{
@@ -1610,7 +1603,7 @@ void motor_drive_task(void *p_arg)
 						ult_flag=0;
 						direction_flag=0;
 						process_control=6;
-						printf("ff\r\n");
+//						printf("ff\r\n");
 //						OSTimeDlyHMSM(0,0,2,0,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±2s
 //					}
 //					printf("w\r\n");
@@ -1631,7 +1624,7 @@ void motor_drive_task(void *p_arg)
 					Left_FR(0);Right_FR(1);
 					Left_BK(1);Right_BK(1);
 					process_control=0;
-					printf("e\r\n");
+//					printf("e\r\n");
 				}
 				if(process_control==3)
 				{
@@ -1670,22 +1663,22 @@ void MUSIC_task(void *p_arg)
 	{
 		while(music_play)
 		{
-			static u16 i=0;
-			i++;
-			if(i==1)
-			{
-				W25QXX_Init();				   	//³õÊ¼»¯W25Q256
-				W25QXX_Init();				    //³õÊ¼»¯W25Q256
-				WM8978_Init();				    //³õÊ¼»¯WM8978
-				WM8978_HPvol_Set(40,40);	    //¶ú»úÒôÁ¿ÉèÖÃ
-				WM8978_SPKvol_Set(30);		    //À®°ÈÒôÁ¿ÉèÖÃ
-				PCF8574_Init();					//³õÊ¼»¯PCF8574
-				
-			}
-			audio_play();
-			
-			if(i>5) i=2;
-			OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±200ms
+//			static u16 i=0;
+//			i++;
+//			if(i==1)
+//			{
+//				W25QXX_Init();				   	//³õÊ¼»¯W25Q256
+//				W25QXX_Init();				    //³õÊ¼»¯W25Q256
+//				WM8978_Init();				    //³õÊ¼»¯WM8978
+//				WM8978_HPvol_Set(40,40);	    //¶ú»úÒôÁ¿ÉèÖÃ
+//				WM8978_SPKvol_Set(30);		    //À®°ÈÒôÁ¿ÉèÖÃ
+//				PCF8574_Init();					//³õÊ¼»¯PCF8574
+//				
+//			}
+//			audio_play();
+//			
+//			if(i>5) i=2;
+//			OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±200ms
 		}
 		OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //ÑÓÊ±200ms
 	}

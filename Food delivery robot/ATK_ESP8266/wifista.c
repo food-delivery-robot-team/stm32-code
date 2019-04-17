@@ -156,7 +156,7 @@ PRESTA:
 				{ 
 					rlen=USART3_RX_STA&0X7FFF;	//得到本次接收到的数据长度
 					USART3_RX_BUF[rlen]=0;		//添加结束符 
-					printf("%s",USART3_RX_BUF);	//发送到串口   
+//					printf("%s",USART3_RX_BUF);	//发送到串口   
 					sprintf((char*)p,"收到%d字节,内容如下",rlen);//接收到的字节数 
 					LCD_Fill(30+54,115,239,130,WHITE);
 					POINT_COLOR=BRED;

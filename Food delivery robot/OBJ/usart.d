@@ -79,10 +79,11 @@
 ..\obj\usart.o: ..\HALLIB\STM32F7xx_HAL_Driver\Inc\stm32f7xx_hal.h
 ..\obj\usart.o: ..\HARDWARE\LIDAR\lidar.h
 ..\obj\usart.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+..\obj\usart.o: ..\HARDWARE\LCD\lcd.h
+..\obj\usart.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 ..\obj\usart.o: ..\UCOSIII\UCOS-CONFIG\includes.h
 ..\obj\usart.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 ..\obj\usart.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\ctype.h
-..\obj\usart.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 ..\obj\usart.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdarg.h
 ..\obj\usart.o: ..\UCOSIII\uCOS-III\Source\os.h
 ..\obj\usart.o: ..\UCOSIII\UCOS-CONFIG\os_cfg.h

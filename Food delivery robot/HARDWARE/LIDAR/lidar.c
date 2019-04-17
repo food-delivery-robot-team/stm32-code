@@ -10,7 +10,7 @@ u8 lidar_a,lidar_m,Lidar_Data[150];
 
 float AngleFSA,AngleLSA,Anglei[100],Lidar_Distance[100],Lidar_x[100],Lidar_y[100]; //初始角,结束角,中间角,距离
 
-u8 lidar_i,lidar_LSN,lidar_b,lidar_n,lidar_c;
+u8 lidar_i=1,lidar_LSN,lidar_b,lidar_n,lidar_c;
 
 
 void AngleFSA_Cal(void)   //初始角计算
