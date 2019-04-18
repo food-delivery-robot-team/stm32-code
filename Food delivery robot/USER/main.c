@@ -622,18 +622,21 @@ void runing_task(void *p_arg)
 		 	if(tp_dev.x[0]<lcddev.width&&tp_dev.y[0]<lcddev.height)
 			{	
 //				printf("%d   %d",tp_dev.x[0],tp_dev.y[0]);
-				if(tp_dev.x[0]>20&&tp_dev.y[0]>20&&tp_dev.x[0]<160&&tp_dev.y[0]<80&&seconfary_menu==0)
+				if(tp_dev.x[0]>20&&tp_dev.y[0]>20&&tp_dev.x[0]<160&&tp_dev.y[0]<80&&seconfary_menu==0&&TOUCH_flag==0)
 				{
 					TOUCH_flag=1;
 					seconfary_menu=1;
 					
-					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
+					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);				
+					OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);	//有时候无法解挂，多重复几次以确保解挂
 					OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//没有按键按下的时候 
 					OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);	
-					
-	//				printf("resume\r\n");
+					OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//没有按键按下的时候 
+					OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);	
+					OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//没有按键按下的时候 
+//					printf("resumeov5640TaskTCB\r\n");
 				}
-				else if(tp_dev.x[0]>20&&tp_dev.y[0]>100&&tp_dev.x[0]<160&&tp_dev.y[0]<180&&seconfary_menu==0)
+				else if(tp_dev.x[0]>20&&tp_dev.y[0]>100&&tp_dev.x[0]<160&&tp_dev.y[0]<180&&seconfary_menu==0&&TOUCH_flag==0)
 				{
 					TOUCH_flag=2;
 					seconfary_menu=1;
@@ -642,58 +645,56 @@ void runing_task(void *p_arg)
 					OSTaskResume((OS_TCB*)&SELECT_TABLETaskTCB,&err);	
 					
 				}
-				else if(tp_dev.x[0]>20&&tp_dev.y[0]>200&&tp_dev.x[0]<160&&tp_dev.y[0]<280&&seconfary_menu==0)
+				else if(tp_dev.x[0]>20&&tp_dev.y[0]>200&&tp_dev.x[0]<160&&tp_dev.y[0]<280&&seconfary_menu==0&&TOUCH_flag==0)
 				{
 					TOUCH_flag=3;
 					seconfary_menu=1;
-					
-//					OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
-//					OSTaskSuspend((OS_TCB*)&SELECT_TABLETaskTCB,&err);
-////					OSTaskSuspend((OS_TCB*)&LETS_RUNTaskTCB,&err);
-////					OSTaskSuspend((OS_TCB*)&motor_driveTaskTCB,&err);
-////					OSTaskSuspend((OS_TCB*)&AGV_guideTaskTCB,&err);
-//					OSTaskSuspend((OS_TCB*)&ultrasonicTaskTCB,&err);
-////					OSTaskSuspend((OS_TCB*)&WIFITaskTCB,&err);
-//					OSTaskSuspend((OS_TCB*)&MUSICTaskTCB,&err);
-////					OSTaskSuspend((OS_TCB*)&RFIDTaskTCB,&err);
-//				
+					USART_RX_STA=0;
 					HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Start,2);          //串口发送启动指令
 					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
 					OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//没有按键按下的时候 
 					OSTaskResume((OS_TCB*)&lidarTaskTCB,&err);	
-					
-					
-					
-					
-					
+					OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//没有按键按下的时候 
+					OSTaskResume((OS_TCB*)&lidarTaskTCB,&err);	
+					OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//没有按键按下的时候 
+					OSTaskResume((OS_TCB*)&lidarTaskTCB,&err);	
+					OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//没有按键按下的时候 
 					
 				}
-				else if(tp_dev.x[0]>180&&tp_dev.y[0]>20&&tp_dev.x[0]<280&&tp_dev.y[0]<80&&seconfary_menu==1)
+				else if(tp_dev.x[0]>180&&tp_dev.y[0]>20&&tp_dev.x[0]<280&&tp_dev.y[0]<80&&seconfary_menu==1&&TOUCH_flag!=0)
 				{
+					if(TOUCH_flag==3)
+					{
+						USART_RX_STA|=0x8000;
+					}
+					seconfary_menu=0;
+					TOUCH_flag=0;
 					OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
 					OSTaskSuspend((OS_TCB*)&SELECT_TABLETaskTCB,&err);
-					HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Stop,2);          //串口发送启动指令
+					HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Stop,2);          //串口发送停止指令
 					OSTaskSuspend((OS_TCB*)&lidarTaskTCB,&err);
 //					printf("suspend\r\n");
 //					LCD_Clear(WHITE);
 					OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);
-					seconfary_menu=0;
+					
 				}
-				else if((tp_dev.x[0]>20&&tp_dev.y[0]>170&&tp_dev.x[0]<120&&tp_dev.y[0]<230&&seconfary_menu==1)||
-						(tp_dev.x[0]>20&&tp_dev.y[0]>290&&tp_dev.x[0]<120&&tp_dev.y[0]<350&&seconfary_menu==1)||
-						(tp_dev.x[0]>160&&tp_dev.y[0]>120&&tp_dev.x[0]<260&&tp_dev.y[0]<280&&seconfary_menu==1)||
-						(tp_dev.x[0]>160&&tp_dev.y[0]>240&&tp_dev.x[0]<260&&tp_dev.y[0]<300&&seconfary_menu==1)||
-						(tp_dev.x[0]>160&&tp_dev.y[0]>360&&tp_dev.x[0]<260&&tp_dev.y[0]<420&&seconfary_menu==1))
+				else if((tp_dev.x[0]>20&&tp_dev.y[0]>170&&tp_dev.x[0]<120&&tp_dev.y[0]<230&&seconfary_menu==1&&TOUCH_flag==2)||
+						(tp_dev.x[0]>20&&tp_dev.y[0]>290&&tp_dev.x[0]<120&&tp_dev.y[0]<350&&seconfary_menu==1&&TOUCH_flag==2)||
+						(tp_dev.x[0]>160&&tp_dev.y[0]>120&&tp_dev.x[0]<260&&tp_dev.y[0]<280&&seconfary_menu==1&&TOUCH_flag==2)||
+						(tp_dev.x[0]>160&&tp_dev.y[0]>240&&tp_dev.x[0]<260&&tp_dev.y[0]<300&&seconfary_menu==1&&TOUCH_flag==2)||
+						(tp_dev.x[0]>160&&tp_dev.y[0]>360&&tp_dev.x[0]<260&&tp_dev.y[0]<420&&seconfary_menu==1&&TOUCH_flag==2))
 						{
-							if(tp_dev.x[0]>20&&tp_dev.y[0]>170&&tp_dev.x[0]<120&&tp_dev.y[0]<230&&seconfary_menu==1)  SELECT_TABLE_RESULT=1;
-							if(tp_dev.x[0]>20&&tp_dev.y[0]>290&&tp_dev.x[0]<120&&tp_dev.y[0]<350&&seconfary_menu==1)  SELECT_TABLE_RESULT=2;
-							if(tp_dev.x[0]>160&&tp_dev.y[0]>120&&tp_dev.x[0]<260&&tp_dev.y[0]<280&&seconfary_menu==1) SELECT_TABLE_RESULT=3;
-							if(tp_dev.x[0]>160&&tp_dev.y[0]>240&&tp_dev.x[0]<260&&tp_dev.y[0]<300&&seconfary_menu==1) SELECT_TABLE_RESULT=4;
-							if(tp_dev.x[0]>160&&tp_dev.y[0]>360&&tp_dev.x[0]<260&&tp_dev.y[0]<420&&seconfary_menu==1) SELECT_TABLE_RESULT=5;					
+							if(tp_dev.x[0]>20&&tp_dev.y[0]>170&&tp_dev.x[0]<120&&tp_dev.y[0]<230&&seconfary_menu==1&&TOUCH_flag==2)  SELECT_TABLE_RESULT=1;
+							if(tp_dev.x[0]>20&&tp_dev.y[0]>290&&tp_dev.x[0]<120&&tp_dev.y[0]<350&&seconfary_menu==1&&TOUCH_flag==2)  SELECT_TABLE_RESULT=2;
+							if(tp_dev.x[0]>160&&tp_dev.y[0]>120&&tp_dev.x[0]<260&&tp_dev.y[0]<280&&seconfary_menu==1&&TOUCH_flag==2) SELECT_TABLE_RESULT=3;
+							if(tp_dev.x[0]>160&&tp_dev.y[0]>240&&tp_dev.x[0]<260&&tp_dev.y[0]<300&&seconfary_menu==1&&TOUCH_flag==2) SELECT_TABLE_RESULT=4;
+							if(tp_dev.x[0]>160&&tp_dev.y[0]>360&&tp_dev.x[0]<260&&tp_dev.y[0]<420&&seconfary_menu==1&&TOUCH_flag==2) SELECT_TABLE_RESULT=5;					
 							
+							seconfary_menu=0;
+							TOUCH_flag=0;
 							OSTaskSuspend((OS_TCB*)&ov5640TaskTCB,&err);
 							OSTaskSuspend((OS_TCB*)&SELECT_TABLETaskTCB,&err);
-							HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Stop,2);          //串口发送启动指令
+							HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Stop,2);          //串口发送停止指令
 							OSTaskSuspend((OS_TCB*)&lidarTaskTCB,&err);
 		//					printf("suspend\r\n");
 		//					LCD_Clear(WHITE);
@@ -701,16 +702,17 @@ void runing_task(void *p_arg)
 							
 							OSTimeDlyHMSM(0,0,1,0,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
 							
-							seconfary_menu=0;
+							
 						}
 				else OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//没有按键按下的时候 			   
 			}
 			
 		}else OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err);	//没有按键按下的时候 
 		times++;
-		if(times==500) 
+		if(times>200) 
 		{
-			OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);//每两秒更新显示
+//			printf("TOUCH_flag:%d seconfary_menu:%d \r\n",TOUCH_flag,seconfary_menu);
+			OSTaskResume((OS_TCB*)&interfaceTaskTCB,&err);//每5秒更新显示
 			times=0;
 		}
 	}
@@ -746,7 +748,7 @@ void interface_task(void *p_arg)
 			LCD_Clear(WHITE);//清屏 
 			LCD_DrawRectangle(180, 20, 280, 80);
 			LCD_ShowString(195,30,200,16,32,(u8*)"EXIT");		
-			TOUCH_flag=0;
+//			TOUCH_flag=0;
 		}
 		if(TOUCH_flag==2)
 		{
@@ -763,7 +765,7 @@ void interface_task(void *p_arg)
 			LCD_ShowString(210,250,200,16,32,(u8*)"4");
 			LCD_DrawRectangle(160, 360, 260, 420);
 			LCD_ShowString(210,370,200,16,32,(u8*)"5");
-			TOUCH_flag=0;
+//			TOUCH_flag=0;
 		}
 		if(TOUCH_flag==3)
 		{
@@ -771,7 +773,7 @@ void interface_task(void *p_arg)
 			LCD_DrawRectangle(180, 20, 260, 80);
 			LCD_ShowString(195,30,200,16,32,(u8*)"EXIT");
 			LCD_Draw_Circle(240,400,2);  //标记雷达中心
-			TOUCH_flag=0;
+//			TOUCH_flag=0;
 		}
 		
 		OSTaskSuspend((OS_TCB*)&interfaceTaskTCB,&err);
@@ -794,19 +796,24 @@ void ov5640_task(void *p_arg)
 		while(1)
 		{
 
-			seconfary_menu=1;
-//			i++;
+			i++;
 
 			if(readok==1)			//采集到了一帧图像
-			{		
+			{	
+				printf("readok: %d\r\n",readok);				
 				readok=0;
 				qr_show_image((lcddev.width-qr_image_width)/2,(lcddev.height-qr_image_width)/2,qr_image_width,qr_image_width,rgb_data_buf);
 				qr_decode(qr_image_width,rgb_data_buf);
 			}
 
 			
-			OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
+			OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //延时200ms
 			
+			if(i>10)
+			{
+				i=0;
+				printf("running\r\n");
+			}
 			
 //			if(i>0) 
 //			{
@@ -1407,8 +1414,13 @@ void motor_drive_task(void *p_arg)
 				{
 					TIM_SetTIM3Compare4(498);	//修改比较值，修改占空比左
 					TIM_SetTIM3Compare3(498);	//修改比较值，修改占空比右
+					HAL_UART_Transmit_IT(&UART1_Handler,Lidar_Stop,2);          //串口发送停止指令
 					LCD_Clear(WHITE);
 					OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_HMSM_STRICT,&err); //延时5s
+					OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);
+					OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err); //延时5s
+					OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);
+					OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_HMSM_STRICT,&err); //延时5s
 					OSTaskResume((OS_TCB*)&ov5640TaskTCB,&err);
 					qr_show:  if(QR_CODE_RESULT==1) 
 					{
